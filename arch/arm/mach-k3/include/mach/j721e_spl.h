@@ -42,4 +42,34 @@
 #define K3_PRIMARY_BOOTMODE		0x0
 #define K3_BACKUP_BOOTMODE		0x1
 
+/* Starting buffer address is 1MB before the stack address in DDR */
+#define BUFFER_ADDR (CONFIG_SPL_STACK_R_ADDR - SZ_1M)
+
+/* This is actually the whole size of the SRAM */
+#define BL31_SIZE    0x20000
+
+/* This address belongs to a reserved memory region for the point of view of
+ * Linux, U-boot SPL must use the same address to restore TF-A and resume
+ * entry point address
+ */
+#define LPM_SAVE		0xA5000000
+#define LPM_BL31		LPM_SAVE
+#define LPM_BL31_START		LPM_BL31 + BL31_SIZE
+#define LPM_BL31_SIZE		LPM_BL31_START + 4
+#define LPM_DM			LPM_BL31_SIZE  + 4
+
+/* Check if the copy of TF-A and DM-Firmware in DRAM does not overlap an
+ * over memory section.
+ * The resume address of TF-A is also saved in DRAM.
+ * At build time we don't know the DM-Firmware size, so we keep 512k to
+ * save it.
+ */
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_TARGET_J7200_R5_EVM)
+#if ((LPM_DM + SZ_512K) > BUFFER_ADDR)
+#error Not enough space to save DM-Firmware and TF-A for S2R
+#endif
+#endif
+
+#define BL31_MAGIC_SUSPEND 0xA5A5A5A5
+
 #endif
