@@ -410,6 +410,306 @@ static int k3_ddrss_ofdata_to_priv(struct udevice *dev)
 	return ret;
 }
 
+#if defined(CONFIG_K3_J721E_DDRSS)
+
+void __weak board_k3_ddrss_lpddr4_release_retention(void) {}
+
+int __weak board_is_resuming(void)
+{
+	return 0;
+}
+
+#define PLL12_CTRL  0x0068C020
+
+#define k3_ddrss_readreg(k3_ddrss, block, shift, reg, pt) do {		\
+		u32 offset = 0U;					\
+		u32 result = 0U;					\
+		TH_OFFSET_FROM_REG(reg, shift, offset);			\
+		result = k3_ddrss->driverdt->readreg(&k3_ddrss->pd, block, offset, pt); \
+		if (result > 0U) {					\
+			printf("%s: Failed to read %s\n", __func__, xstr(reg));	\
+			hang();						\
+		}							\
+	} while (0)
+
+#define k3_ddrss_writereg(k3_ddrss, block, shift, reg, value) do {	\
+		u32 offset = 0U;					\
+		u32 result = 0U;					\
+		TH_OFFSET_FROM_REG(reg, shift, offset);			\
+		result = k3_ddrss->driverdt->writereg(&k3_ddrss->pd, block, offset, value); \
+		if (result > 0U) {					\
+			printf("%s: Failed to write %s\n", __func__, xstr(reg)); \
+			hang();						\
+		}							\
+	} while (0)
+
+#define k3_ddrss_readreg_ctl(ddrss, reg, pt) \
+	k3_ddrss_readreg(ddrss, LPDDR4_CTL_REGS, CTL_SHIFT, reg, pt)
+
+#define k3_ddrss_readreg_pi(ddrss, reg, pt) \
+	k3_ddrss_readreg(ddrss, LPDDR4_PHY_INDEP_REGS, PI_SHIFT, reg, pt)
+
+#define k3_ddrss_readreg_phy(ddrss, reg, pt) \
+	k3_ddrss_readreg(ddrss, LPDDR4_PHY_REGS, PHY_SHIFT, reg, pt)
+
+#define k3_ddrss_writereg_ctl(ddrss, reg, value) \
+	k3_ddrss_writereg(ddrss, LPDDR4_CTL_REGS, CTL_SHIFT, reg, value)
+
+#define k3_ddrss_writereg_pi(ddrss, reg, value) \
+	k3_ddrss_writereg(ddrss, LPDDR4_PHY_INDEP_REGS, PI_SHIFT, reg, value)
+
+#define k3_ddrss_writereg_phy(ddrss, reg, value) \
+	k3_ddrss_writereg(ddrss, LPDDR4_PHY_REGS, PHY_SHIFT, reg, value)
+
+#define k3_ddrss_set_ctl(k3_ddrss, reg, mask) do {	\
+	u32 val;					\
+	k3_ddrss_readreg_ctl(ddrss, reg, &val);		\
+	val |= mask;					\
+	k3_ddrss_writereg_ctl(ddrss, reg, val);		\
+	} while (0)
+
+#define k3_ddrss_clr_ctl(k3_ddrss, reg, mask) do {		\
+		u32 val;					\
+		k3_ddrss_readreg_ctl(ddrss, reg, &val);		\
+		val &= ~(mask);					\
+		k3_ddrss_writereg_ctl(ddrss, reg, val);		\
+	} while (0)
+
+#define k3_ddrss_set_pi(k3_ddrss, reg, mask) do {		\
+		u32 val;					\
+		k3_ddrss_readreg_pi(ddrss, reg, &val);		\
+		val |= mask;					\
+		k3_ddrss_writereg_pi(ddrss, reg, val);		\
+	} while (0)
+
+#define k3_ddrss_clr_pi(k3_ddrss, reg, mask) do {		\
+		u32 val;					\
+		k3_ddrss_readreg_pi(ddrss, reg, &val);		\
+		val &= ~(mask);					\
+		k3_ddrss_writereg_pi(ddrss, reg, val);		\
+	} while (0)
+
+#define k3_ddrss_set_phy(ddrss, reg, mask) do {		\
+	u32 val;					\
+	k3_ddrss_readreg_phy(ddrss, reg, &val);		\
+	val |= mask;					\
+	k3_ddrss_writereg_phy(ddrss, reg, val);		\
+	} while (0)
+
+#define k3_ddrss_clr_phy(ddrss, reg, mask) do {		\
+	u32 val;					\
+	k3_ddrss_readreg_phy(ddrss, reg, &val);		\
+	val &= ~(mask);					\
+	k3_ddrss_writereg_phy(ddrss, reg, val);		\
+	} while (0)
+
+static void k3_ddrss_lpddr4_exit_retention(struct k3_ddrss_desc *ddrss)
+{
+	u32 regval;
+	unsigned long tmo;
+	volatile unsigned int val;
+
+	/* disable auto entry / exit */
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, (0xF << 24) | (0xF << 16));
+
+	/* Configure DFI Interface, DDR retention exit occurs through PHY */
+	k3_ddrss_readreg_phy(ddrss, LPDDR4__PHY_SET_DFI_INPUT_0__REG, &regval);
+	regval &= ~0xF0F; // Set DFI_Input_1 = 0
+	regval |= 0x01;   // Set DFI Input_0 = 1
+	k3_ddrss_writereg_phy(ddrss, LPDDR4__PHY_SET_DFI_INPUT_0__REG, regval);
+
+	/* PWRUP_SREFRESH_EXIT = 1 */
+	k3_ddrss_set_ctl(ddrss, LPDDR4__PWRUP_SREFRESH_EXIT__REG, 0x1);
+
+	/* PI_PWRUP_SREFRESH_EXIT = 0 */
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__PI_COL_DIFF__REG, 0x1 << 16);
+
+	/* DFIBUS_BOOT_FREQ = 0 */
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__DFIBUS_BOOT_FREQ__REG, 0x3);
+
+	/* DFIBUS_FREQ_INIT = 2 */
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, &regval);
+	regval &= ~(0x3 << 24);
+	regval |= (0x1 << 24);
+	k3_ddrss_writereg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, regval);
+
+	/* Force Leveling during Initialization, Enable Link Training */
+
+	/* PI_INIT_LVL_EN = 1 */
+	k3_ddrss_set_pi(ddrss, LPDDR4__PI_NORMAL_LVL_SEQ__REG, (1 << 8));
+
+	/* PI_DRAM_INIT_EN = 0 */
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_DLL_RST__REG, (0x1 << 8));
+
+	/* PI_DFI_PHYMSTR_STATE_SEL_R = 1  (force memory into self-refresh) */
+	k3_ddrss_set_pi(ddrss, LPDDR4__PI_DFI_VERSION__REG, (1 << 24));
+
+	/*  PHY_INDEP_INIT_MODE = 0 */
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, (0x1 << 16));
+	/* PHY_INDEP_TRAIN_MODE = 1 */
+	k3_ddrss_set_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, 0x1);
+
+	/* PI_INIT_WORK_FREQ = 1 */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, &regval);
+	regval &= ~0x1F;
+	regval |= 0x01;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, regval);
+
+	/* PI_FREQ_MAP[2:0] */
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x03);
+
+	/* Training/leveling configurations for different frequency set points */
+
+	/* PI_CALVL_EN_F0 = 01b; PI_CALVL_EN_F1 = 01b; PI_CALVL_EN_F2 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_CALVL_EN_F0__REG, &regval);
+	regval &= ~0x030303;
+	regval |= 0x010101;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_CALVL_EN_F0__REG, regval);
+
+	/* PI_WRLVL_EN_F0 = 00b; PI_WRLVL_EN_F1 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_TDFI_CTRL_DELAY_F1__REG, &regval);
+	regval &= ~0x03030000;
+	regval |= 0x01000000;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_TDFI_CTRL_DELAY_F1__REG, regval);
+
+	/* PI_WRLVL_EN_F2 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WRLVL_EN_F2__REG, &regval);
+	regval &= ~0x03;
+	regval |= 0x01;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WRLVL_EN_F2__REG, regval);
+
+	/* PI_RDLVL_EN_F0 = 00b; PI_RDLVL_EN_F1 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, &regval);
+	regval &= ~0x030003;
+	regval |= 0x010000;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, regval);
+
+	/* PI_RDLVL_EN_F2 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, &regval);
+	regval &= ~0x03;
+	regval |= 0x01;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, regval);
+
+	/* PI_RDLVL_GATE_EN_F0 = 00b; PI_RDLVL_GATE_EN_F1 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, &regval);
+	regval &= ~0x03000300;
+	regval |= 0x01000000;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, regval);
+
+	/* PI_RDLVL_GATE_EN_F2 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, &regval);
+	regval &= ~0x0300;
+	regval |= 0x0100;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, regval);
+
+	/* PI_WDQLVL_EN_F0 = 00b */
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F0__REG, (0x3 << 8));
+
+	/* PI_WDQLVL_EN_F1 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F1__REG, &regval);
+	regval &= ~(0x3 << 24);
+	regval |= (0x1 << 24);
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F1__REG, regval);
+
+	/* PI_WDQLVL_EN_F2 = 01b */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F2__REG, &regval);
+	regval &= ~(0x3 << 8);
+	regval |= (0x1 << 8);
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F2__REG, regval);
+
+	*(unsigned int *)PLL12_CTRL |= 0x80000000;
+	val = *(volatile unsigned int *)PLL12_CTRL;
+
+	if ((val & 0x80000000) != 0x80000000)
+		val = *(volatile unsigned int *)PLL12_CTRL;
+
+	board_k3_ddrss_lpddr4_release_retention();
+
+	/* LPC_SR_PHYMSTR_EN */
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__LPC_SR_CTRLUPD_EN__REG, (0x1 << 16));
+	/* PI_START=1 */
+	k3_ddrss_set_pi(ddrss, LPDDR4__PI_START__REG, 0x01);
+	/* START=1 */
+	k3_ddrss_set_ctl(ddrss, LPDDR4__START__REG, 0x01);
+
+	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
+	ddrss->ddr_fhs_cnt = 5;
+	k3_lpddr4_freq_update(ddrss);
+	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
+
+	tmo = timer_get_us() + 100000;
+	do {
+		k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INT_STATUS__REG, &regval);
+		debug("%s: DDRSS_PI_79 = %x\n", __func__, regval);
+		if (timer_get_us() > tmo) {
+			printf("%s:%d timeout error\n", __func__, __LINE__);
+			hang();
+		}
+	} while ((regval & (1 << 0)) == 0x00);
+
+	tmo = timer_get_us() + 4000;
+	do {
+		k3_ddrss_readreg_ctl(ddrss, LPDDR4__INT_STATUS_0__REG, &regval);
+		if (timer_get_us() > tmo) {
+			printf("%s:%d timeout error\n", __func__, __LINE__);
+			hang();
+		}
+	} while ((regval & (1 << 9)) == 0x00);
+
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INT_STATUS__REG, &regval);
+	debug("%s: PI interrupt status: 0x%08x\n", __func__, regval);
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__INT_STATUS_0__REG, &regval);
+	debug("%s: Controller interrupt status: 0x%08x\n", __func__, regval);
+
+	debug("%s: Successfully exited Retention\n", __func__);
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
+	debug("%s: LP State: 0x%08x\n", __func__, regval);
+
+	k3_ddrss_writereg_ctl(ddrss, LPDDR4__INT_ACK_0__REG, (0x1 << 10));
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__CKSRX_F1__REG, &regval);
+	regval &= ~(0x7F << 24);
+	regval |= (0x2 << 24); // set low power mode exit
+	k3_ddrss_writereg_ctl(ddrss, LPDDR4__CKSRX_F1__REG, regval);
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
+	debug("%s: LP State: 0x%08x\n", __func__, regval);
+
+	/* wait until low power operation has been completed */
+	tmo = timer_get_us() + 4000;
+	do {
+		k3_ddrss_readreg_ctl(ddrss, LPDDR4__INT_STATUS_0__REG, &regval);
+		if (timer_get_us() > tmo) {
+			printf("%s:%d timeout error\n", __func__, __LINE__);
+			hang();
+		}
+	} while ((regval & (0x1 << 10)) == 0);
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
+	debug("%s: LP State: 0x%08x\n", __func__, regval);
+
+	k3_ddrss_writereg_ctl(ddrss, LPDDR4__INT_ACK_0__REG, (0x1 << 10));
+
+	/*
+	 * bit 6 / 14 -- lp_state valid
+	 * bits 13:8 / 5:0 0x0F SRPD Long with Mem and Controller Clk Gating
+	 */
+	tmo = timer_get_us() + 4000;
+	do {
+		k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
+		if (timer_get_us() > tmo) {
+			printf("%s:%d timeout error\n", __func__, __LINE__);
+			hang();
+		}
+	} while ((regval & 0x4F4F) != 0x4040);
+
+	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
+	debug("%s: LP State: 0x%08x\n", __func__, regval);
+}
+#endif /* CONFIG_K3_J721E_DDRSS */
+
 void k3_lpddr4_probe(struct k3_ddrss_desc *ddrss)
 {
 	u32 status = 0U;
@@ -633,6 +933,13 @@ static int k3_ddrss_probe(struct udevice *dev)
 	ret = k3_ddrss_init_freq(ddrss);
 	if (ret)
 		return ret;
+
+#if defined(CONFIG_K3_J721E_DDRSS)
+	if (board_is_resuming()) {
+		k3_ddrss_lpddr4_exit_retention(ddrss);
+		return 0;
+	}
+#endif
 
 	k3_lpddr4_start(ddrss);
 
