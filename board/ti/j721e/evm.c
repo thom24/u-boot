@@ -23,6 +23,7 @@
 #include <dm.h>
 #include <dm/uclass-internal.h>
 #include <linux/printk.h>
+#include <power/pmic.h>
 
 #include "../common/board_detect.h"
 
@@ -528,6 +529,59 @@ err_free_gpio:
 		return ret;
 	}
 }
+
+#if (IS_ENABLED(CONFIG_SPL_BUILD) && IS_ENABLED(CONFIG_TARGET_J7200_R5_EVM))
+
+#define SCRATCH_PAD_REG_3 0xCB
+
+#define MAGIC_SUSPEND 0xBA
+
+static int resuming = -1;
+
+int board_is_resuming(void)
+{
+	struct udevice *pmica, *pmicb;
+	int ret;
+
+	if (resuming >= 0)
+		goto end;
+
+	ret = uclass_get_device_by_name(UCLASS_PMIC,
+					"tps659413@48", &pmica);
+	if (ret) {
+		printf("Getting PMICA init failed: %d\n", ret);
+		resuming = 0;
+		goto end;
+	}
+	debug("%s: PMICA is detected (%s)\n", __func__, pmica->name);
+
+	ret = uclass_get_device_by_name(UCLASS_PMIC,
+					"lp876441@4c", &pmicb);
+	if (ret) {
+		printf("Getting PMICB init failed: %d\n", ret);
+		resuming = 0;
+		goto end;
+	}
+	debug("%s: PMICB is detected (%s)\n", __func__, pmicb->name);
+
+	if ((pmic_reg_read(pmica, SCRATCH_PAD_REG_3) == MAGIC_SUSPEND)) {
+		resuming = 1;
+		debug("%s: board is resuming\n", __func__);
+
+		/* clean magic suspend */
+		if (pmic_reg_write(pmica, SCRATCH_PAD_REG_3, 0))
+			printf("Failed to clean magic value for suspend detection in PMICA\n");
+	} else {
+		resuming = 0;
+		debug("%s: board is booting (no resume detected)\n", __func__);
+	}
+end:
+	return resuming;
+}
+
+#endif /* CONFIG_SPL_BUILD && CONFIG_TARGET_J7200_R5_EVM */
+
+
 
 void spl_board_init(void)
 {
