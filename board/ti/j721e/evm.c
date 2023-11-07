@@ -532,15 +532,22 @@ err_free_gpio:
 
 #if (IS_ENABLED(CONFIG_SPL_BUILD) && IS_ENABLED(CONFIG_TARGET_J7200_R5_EVM))
 
+static struct udevice *pmica;
+static struct udevice *pmicb;
+
+#define GPIO_OUT_1        0x3D
+
 #define SCRATCH_PAD_REG_3 0xCB
 
 #define MAGIC_SUSPEND 0xBA
+
+#define DDR_RET_VAL BIT(1)
+#define DDR_RET_CLK BIT(2)
 
 static int resuming = -1;
 
 int board_is_resuming(void)
 {
-	struct udevice *pmica, *pmicb;
 	int ret;
 
 	if (resuming >= 0)
@@ -577,6 +584,24 @@ int board_is_resuming(void)
 	}
 end:
 	return resuming;
+}
+
+void board_k3_ddrss_lpddr4_release_retention(void)
+{
+	int regval;
+
+	/* Set DDR_RET Signal Low on PMIC B */
+	regval = pmic_reg_read(pmicb, GPIO_OUT_1) & ~DDR_RET_VAL;
+
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval);
+
+	/* Now toggle the CLK of the latch for DDR ret */
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval | DDR_RET_CLK);
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval & ~(DDR_RET_CLK));
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval | DDR_RET_CLK);
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval & ~(DDR_RET_CLK));
+
+	pmic_reg_write(pmica, 0x86, 0x3);
 }
 
 #endif /* CONFIG_SPL_BUILD && CONFIG_TARGET_J7200_R5_EVM */
