@@ -27,6 +27,7 @@
 #include <env.h>
 #include <elf.h>
 #include <soc.h>
+#include <hang.h>
 
 #if IS_ENABLED(CONFIG_SYS_K3_SPL_ATF)
 enum {
@@ -222,6 +223,11 @@ void release_resources_for_core_shutdown(void)
 	}
 }
 
+__weak int board_is_resuming(void)
+{
+	return 0;
+}
+
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
@@ -235,6 +241,32 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	ret = rproc_init();
 	if (ret)
 		panic("rproc failed to be initialized (%d)\n", ret);
+
+	if (board_is_resuming()) {
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+		if (!valid_elf_image(LPM_DM_SAVE))
+			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
+			      __func__);
+
+		loadaddr = load_elf_image_phdr(LPM_DM_SAVE);
+
+		/*
+		 * Check if the start address of TF-A is in DRAM.
+		 * If not it means TF-A was running in SRAM, so it shall be
+		 * restored.
+		 */
+		if (*(ulong *)(LPM_BL31_START_SAVE) < CFG_SYS_SDRAM_BASE)
+			memcpy((void *)*(uintptr_t *)(LPM_BL31_START_SAVE),
+			       (void *)LPM_BL31_SAVE, BL31_SIZE);
+
+		ret = rproc_load(1, *(ulong *)(LPM_BL31_RESUME_SAVE), BL31_SIZE);
+		if (ret)
+			panic("%s: ATF failed to load on rproc (%d)\n", __func__, ret);
+
+		debug("%s: jumping to address %x\n", __func__, loadaddr);
+		goto start_arm64;
+#endif
+	}
 
 	init_env();
 
@@ -250,6 +282,10 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	if (!fit_image_info[IMAGE_ID_ATF].image_start)
 		fit_image_info[IMAGE_ID_ATF].image_start =
 			spl_image->entry_point;
+
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+	*(uintptr_t *)(LPM_BL31_START_SAVE) = fit_image_info[IMAGE_ID_ATF].image_start;
+#endif
 
 	ret = rproc_load(1, fit_image_info[IMAGE_ID_ATF].image_start, 0x200);
 	if (ret)
@@ -290,8 +326,18 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		loadaddr = load_elf_image_phdr(loadaddr);
 	} else {
 		loadaddr = fit_image_info[IMAGE_ID_DM_FW].image_start;
-		if (valid_elf_image(loadaddr))
+		if (valid_elf_image(loadaddr)) {
 			loadaddr = load_elf_image_phdr(loadaddr);
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+			if (fit_image_info[IMAGE_ID_DM_FW].image_len > (BUFFER_ADDR - LPM_DM_SAVE))
+				log_warning("%s\n: Not enough space to save DM-Firmware",
+					    __func__);
+			else
+				memcpy((void *)LPM_DM_SAVE,
+				       (void *)fit_image_info[IMAGE_ID_DM_FW].image_start,
+					   fit_image_info[IMAGE_ID_DM_FW].image_len);
+#endif
+		}
 	}
 
 	debug("%s: jumping to address %x\n", __func__, loadaddr);

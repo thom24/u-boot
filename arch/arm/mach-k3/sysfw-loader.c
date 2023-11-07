@@ -84,13 +84,16 @@ static bool sysfw_loaded;
 static void *sysfw_load_address;
 
 /*
- * Populate SPL hook to override the default load address used by the SPL
- * loader function with a custom address for SYSFW loading.
+ * Populate SPL hook to override the default load address used by the
+ * SPL loader function with a custom address for SYSFW loading. In
+ * other case use also a custom address located in a reserved memory
+ * region. It ensures that Linux memory won't be corrupted by SPL during
+ * suspend to ram.
  */
 struct legacy_img_hdr *spl_get_load_buffer(ssize_t offset, size_t size)
 {
 	if (sysfw_loaded)
-		return (struct legacy_img_hdr *)(CONFIG_TEXT_BASE + offset);
+		return (struct legacy_img_hdr *)(BUFFER_ADDR + offset);
 	else if (sysfw_load_address)
 		return sysfw_load_address;
 	else
