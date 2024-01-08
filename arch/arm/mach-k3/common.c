@@ -28,6 +28,7 @@
 #include <elf.h>
 #include <soc.h>
 #include <wait_bit.h>
+#include <hang.h>
 
 #define CLKSTOP_TRANSITION_TIMEOUT_MS	10
 
@@ -256,6 +257,11 @@ __weak void release_resources_for_core_shutdown(void)
 	debug("%s not implemented...\n", __func__);
 }
 
+__weak int board_is_resuming(void)
+{
+	return 0;
+}
+
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
@@ -269,6 +275,35 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	ret = rproc_init();
 	if (ret)
 		panic("rproc failed to be initialized (%d)\n", ret);
+
+	if (board_is_resuming()) {
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+		if (!valid_elf_image(LPM_DM))
+			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
+			      __func__);
+
+		loadaddr = load_elf_image_phdr(LPM_DM);
+
+		memcpy((void *)*(ulong *)(LPM_BL31_START),
+		       (void *)LPM_BL31, *(ulong *)(LPM_BL31_SIZE));
+
+		ret = rproc_load(1, *(ulong *)(LPM_BL31_START), 0x200);
+		if (ret)
+			panic("%s: ATF failed to load on rproc (%d)\n", __func__, ret);
+
+#if (CONFIG_IS_ENABLED(FIT_IMAGE_POST_PROCESS) && IS_ENABLED(CONFIG_SYS_K3_SPL_ATF))
+		debug("%s: Authenticating image: addr=%lx, size=%ld, os=%s\n", __func__,
+		      *(ulong *)(LPM_BL31_START), *(ulong *)(LPM_BL31_SIZE),
+		      image_os_match[IMAGE_ID_ATF]);
+
+		ti_secure_image_post_process((void *)LPM_BL31_START,
+					     (size_t *)LPM_BL31_SIZE);
+#endif
+
+		debug("%s: jumping to address %x\n", __func__, loadaddr);
+		goto start_arm64;
+#endif /* IS_ENABLED(CONFIG_SOC_K3_J721E) */
+	}
 
 	init_env();
 
@@ -284,6 +319,14 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	if (!fit_image_info[IMAGE_ID_ATF].image_start)
 		fit_image_info[IMAGE_ID_ATF].image_start =
 			spl_image->entry_point;
+
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+	/* Save TF-A image, as at resume fit image is not processed */
+	memcpy((void *)LPM_BL31, (void *)fit_image_info[IMAGE_ID_ATF].image_start,
+	       fit_image_info[IMAGE_ID_ATF].image_len);
+	*(ulong *)(LPM_BL31_START) = fit_image_info[IMAGE_ID_ATF].image_start;
+	*(ulong *)(LPM_BL31_SIZE) = fit_image_info[IMAGE_ID_ATF].image_len;
+#endif
 
 	ret = rproc_load(1, fit_image_info[IMAGE_ID_ATF].image_start, 0x200);
 	if (ret)
@@ -324,8 +367,18 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		loadaddr = load_elf_image_phdr(loadaddr);
 	} else {
 		loadaddr = fit_image_info[IMAGE_ID_DM_FW].image_start;
-		if (valid_elf_image(loadaddr))
+		if (valid_elf_image(loadaddr)) {
 			loadaddr = load_elf_image_phdr(loadaddr);
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+			if (fit_image_info[IMAGE_ID_DM_FW].image_len > (BUFFER_ADDR - LPM_DM))
+				log_warning("%s\n: Not enough space to save DM-Firmware",
+					    __func__);
+			else
+				memcpy((void *)LPM_DM,
+				       (void *)fit_image_info[IMAGE_ID_DM_FW].image_start,
+				       fit_image_info[IMAGE_ID_DM_FW].image_len);
+#endif
+		}
 	}
 
 	debug("%s: jumping to address %x\n", __func__, loadaddr);
@@ -334,6 +387,16 @@ start_arm64:
 	/* Add an extra newline to differentiate the ATF logs from SPL */
 	printf("Starting ATF on ARM64 core...\n\n");
 
+#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+	/*
+	 * Write a magic value in scratchpad ram to notify TF-A that the board
+	 * is resuming
+	 */
+	if (board_is_resuming())
+		*(u32 *)(SCRACTHPAD_RAM_BASE) = BL31_MAGIC_SUSPEND;
+	else
+		*(u32 *)(SCRACTHPAD_RAM_BASE) = 0x00;
+#endif
 	ret = rproc_start(1);
 	if (ret)
 		panic("%s: ATF failed to start on rproc (%d)\n", __func__, ret);
