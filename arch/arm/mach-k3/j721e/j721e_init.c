@@ -22,6 +22,7 @@
 
 #include "../sysfw-loader.h"
 #include "../common.h"
+#include <power/pmic.h>
 
 /* NAVSS North Bridge (NB) registers */
 #define NAVSS0_NBSS_NB0_CFG_MMRS		0x03802000
@@ -218,9 +219,45 @@ void do_dt_magic(void)
 __weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev) { }
 __weak int board_is_resuming(void) { return 0; }
 
-__weak void k3_deassert_DDR_RET(void) { }
 __weak void k3_ddrss_lpddr4_change_freq(struct udevice *dev) { }
 __weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev) { }
+
+#define GPIO_OUT_1 0x3D
+#define DDR_RET_VAL BIT(1)
+#define DDR_RET_CLK BIT(2)
+static void k3_deassert_DDR_RET(void)
+{
+	struct udevice *pmica;
+	struct udevice *pmicb;
+	int regval;
+	int ret;
+
+	ret = uclass_get_device_by_name(UCLASS_PMIC,
+					"pmic@48", &pmica);
+	if (ret) {
+		printf("Getting PMICA init failed: %d\n", ret);
+		return;
+	}
+
+	ret = uclass_get_device_by_name(UCLASS_PMIC,
+					"pmic@4c", &pmicb);
+	if (ret) {
+		printf("Getting PMICB init failed: %d\n", ret);
+		return;
+	}
+	/* Set DDR_RET Signal Low on PMIC B */
+	regval = pmic_reg_read(pmicb, GPIO_OUT_1) & ~DDR_RET_VAL;
+
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval);
+
+	/* Now toggle the CLK of the latch for DDR ret */
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval | DDR_RET_CLK);
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval & ~(DDR_RET_CLK));
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval | DDR_RET_CLK);
+	pmic_reg_write(pmicb, GPIO_OUT_1, regval & ~(DDR_RET_CLK));
+
+	pmic_reg_write(pmica, 0x86, 0x3);
+}
 
 void board_init_f(ulong dummy)
 {
