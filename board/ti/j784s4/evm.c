@@ -23,6 +23,7 @@
 #include "../common/k3-ddr-init.h"
 #include <dm.h>
 #include <dm/uclass-internal.h>
+#include <power/pmic.h>
 
 #include "../common/board_detect.h"
 
@@ -84,6 +85,56 @@ int board_late_init(void)
 	return 0;
 }
 #endif
+
+#if (IS_ENABLED(CONFIG_SPL_BUILD) && IS_ENABLED(CONFIG_TARGET_J784S4_R5_EVM))
+
+#define SCRATCH_PAD_REG_3 0xCB
+
+#define MAGIC_SUSPEND 0xBA
+
+/* in board_init_f(), there's no BSS, so we can't use global/static variables */
+int board_is_resuming(void)
+{
+	struct udevice *pmic;
+	int retval = 0;
+	int err;
+
+	err = uclass_get_device_by_name(UCLASS_PMIC,
+					"pmic@48", &pmic);
+	if (err) {
+		printf("Getting PMIC init failed: %d\n", err);
+		goto end;
+	}
+	debug("%s: PMIC is detected (%s)\n", __func__, pmic->name);
+
+	if ((pmic_reg_read(pmic, SCRATCH_PAD_REG_3) == MAGIC_SUSPEND)) {
+		debug("%s: board is resuming\n", __func__);
+		retval = 1;
+	} else {
+		debug("%s: board is booting (no resume detected)\n", __func__);
+	}
+end:
+	return retval;
+}
+
+void clean_suspend_flag(void)
+{
+	struct udevice *pmic;
+	int err;
+
+	err = uclass_get_device_by_name(UCLASS_PMIC,
+					"pmic@48", &pmic);
+	if (err) {
+		printf("Getting PMIC init failed: %d\n", err);
+		return;
+	}
+
+	/* clean magic suspend */
+	if (pmic_reg_write(pmic, SCRATCH_PAD_REG_3, 0))
+		printf("Failed to clean magic value for suspend detection in PMIC\n");
+}
+
+#endif /* CONFIG_SPL_BUILD && CONFIG_TARGET_J784s4_R5_EVM */
 
 void spl_board_init(void)
 {

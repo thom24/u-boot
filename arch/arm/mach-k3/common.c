@@ -292,6 +292,8 @@ __weak int board_is_resuming(void)
 	return 0;
 }
 
+__weak void clean_suspend_flag(void) { }
+
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
@@ -427,6 +429,9 @@ start_arm64:
 	else
 		*(u32 *)(SCRACTHPAD_RAM_BASE) = 0x00;
 #endif
+	/* clean the suspend flag from the PMIC */
+	clean_suspend_flag();
+
 	ret = rproc_start(1);
 	if (ret)
 		panic("%s: ATF failed to start on rproc (%d)\n", __func__, ret);
