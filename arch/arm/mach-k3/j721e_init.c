@@ -22,6 +22,7 @@
 #include <fdtdec.h>
 #include <mmc.h>
 #include <remoteproc.h>
+#include <linux/delay.h>
 
 #ifdef CONFIG_K3_LOAD_SYSFW
 struct fwl_data cbass_hc_cfg0_fwls[] = {
@@ -192,6 +193,142 @@ void do_dt_magic(void)
 }
 #endif
 
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_TARGET_J7200_R5_EVM)
+
+void __weak board_set_resuming(void) {}
+
+#if 0
+#define CSL_NAVSS0_SPINLOCK_BASE                                    (0x30e00000UL)
+#define SOC_NUM_SPINLOCKS                                           (256U)
+#define MMR_LOCK0_KICK0                                             (0x01008)
+#define MMR_LOCK0_KICK0_UNLOCK_VAL                                  (0x68EF3490)
+#define MMR_LOCK0_KICK1_UNLOCK_VAL                                  (0xD172BC5A)
+#define SOC_LOCK_MMR_UNLOCK                                         (0U)
+#define IO_TIMEOUT                                                  (150)
+
+/* This only gets used to access registers. The original version from the PDK
+ * handled the full memory range and had redirects.
+ */
+static volatile uint32_t *mkptr(uint32_t base, uint32_t offset)
+{
+	return (volatile uint32_t*)(base+offset);
+}
+
+static void busy_wait_10us(void)
+{
+	volatile unsigned int i = 0;
+	for(i = 0; i < IO_TIMEOUT; i++);
+}
+
+/* SOC_lock, SOC_unlock, Lpm_mmr_isLocked and Lpm_mmr_unlock are extracted from
+ * the PDK lpm.
+ */
+static int32_t SOC_lock(uint32_t lockNum)
+{
+	volatile uint32_t *spinLockReg;
+
+	if (lockNum >= SOC_NUM_SPINLOCKS)
+		return -1;
+
+	spinLockReg = mkptr(CSL_NAVSS0_SPINLOCK_BASE, 0x800);
+
+	while (spinLockReg[lockNum] != 0x0);
+
+	return 0;
+}
+
+static int32_t SOC_unlock(uint32_t lockNum)
+{
+	volatile uint32_t *spinLockReg;
+
+	if (lockNum >= SOC_NUM_SPINLOCKS)
+		return -1;
+
+	spinLockReg = mkptr(CSL_NAVSS0_SPINLOCK_BASE, 0x800);
+	spinLockReg[lockNum] = 0x0;
+
+	return 0;
+}
+
+static int Lpm_mmr_isLocked(uintptr_t base, uint32_t partition)
+{
+	volatile uint32_t * lock = mkptr(base, partition * 0x4000 + MMR_LOCK0_KICK0);
+
+	return (*lock & 0x1u) ? 0 : 1;
+}
+
+static void Lpm_mmr_unlock(uintptr_t base, uint32_t partition)
+{
+	volatile uint32_t * lock = mkptr(base, partition * 0x4000 + MMR_LOCK0_KICK0);
+
+	if (!Lpm_mmr_isLocked(base, partition)) {
+		return;
+	} else {
+		SOC_lock(SOC_LOCK_MMR_UNLOCK);
+		lock[0] = MMR_LOCK0_KICK0_UNLOCK_VAL;
+		lock[1] = MMR_LOCK0_KICK1_UNLOCK_VAL;
+		SOC_unlock(SOC_LOCK_MMR_UNLOCK);
+	}
+}
+#endif
+
+/* In this function, we detect resume using DMSC registers and exit MAIN and MCU
+ * isolation. This has for side-effect to make MAIN_UART0 available again.
+ */
+static void spl_exit_ioret(void)
+{
+	u32 val;
+
+	/* lpm_io_retention uses those registers to detect resume */
+	if (readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_IO) & 0x2000000 ||
+	    readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_DDR) & 0x2000000)
+		board_set_resuming();
+
+	/* Debug print which pin triggered the wakeup event */
+	debug("%s: wakeup event: MAIN_MCAN0_TX=%d MAIN_MCAN1_TX=%d MCU_MCAN0_TX=%d MCU_MCAN1_TX=%d\n",
+	      __func__,
+	      readl(CTRL_MMR0_BASE + 0x1C020) & (0b1 << 30) ? 1 : 0,
+	      readl(CTRL_MMR0_BASE + 0x1C02C) & (0b1 << 30) ? 1 : 0,
+	      readl(WKUP_CTRL_MMR0_BASE + 0x1C0B8) & (0b1 << 30) ? 1 : 0,
+	      readl(WKUP_CTRL_MMR0_BASE + 0x1C0D0) & (0b1 << 30) ? 1 : 0);
+
+#if 0
+	/* Unlock MMRs */
+	Lpm_mmr_unlock(WKUP_CTRL_MMR0_BASE, 6);
+	Lpm_mmr_unlock(WKUP_CTRL_MMR0_BASE, 7);
+	Lpm_mmr_unlock(CTRL_MMR0_BASE, 7);
+#endif
+
+	/* exit MCU canuart io retention with magic word - won't have any affect if already out of io retention */
+	writel(0x55555554, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_MCU_GEN_WAKE_CTRL);
+	writel(0x55555555, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_MCU_GEN_WAKE_CTRL);
+	writel(0x55555554, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_MCU_GEN_WAKE_CTRL);
+
+	/* exit MAIN canuart io retention with magic word - won't have any affect if already out of io retention */
+	writel(0x55555554, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_CANUART_WAKE_CTRL);
+	writel(0x55555555, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_CANUART_WAKE_CTRL);
+	writel(0x55555554, WKUP_CTRL_MMR0_BASE + CSL_WKUP_CTRL_MMR_CFG0_CANUART_WAKE_CTRL);
+
+	/* Disable MCU isolation bit if it is active */
+	val = readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_IO);
+	while(val & 0x2000000)
+	{
+		writel(val & ~(0b1 << 24), CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_IO);
+		udelay(10);
+		val = readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_IO);
+	}
+
+	/* Disable MAIN isolation bit if it is active */
+	val = readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_DDR);
+	while(val & 0x2000000)
+	{
+		writel(val & ~(0b1 << 24), CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_DDR);
+		udelay(10);
+		val = readl(CSL_STD_FW_WKUP_DMSC0_PWRCTRL_0_DMSC_PWR_MMR_PWR_START + CSL_PMMCCONTROL_PMCTRL_DDR);
+	}
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
 #if defined(CONFIG_K3_J721E_DDRSS) || defined(CONFIG_K3_LOAD_SYSFW)
@@ -214,6 +351,10 @@ void board_init_f(ulong dummy)
 
 	/* Init DM early */
 	spl_early_init();
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_TARGET_J7200_R5_EVM)
+	spl_exit_ioret();
+#endif
 
 #ifdef CONFIG_K3_LOAD_SYSFW
 	/*
