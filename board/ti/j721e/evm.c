@@ -531,8 +531,8 @@ err_free_gpio:
 
 #if (IS_ENABLED(CONFIG_SPL_BUILD) && IS_ENABLED(CONFIG_TARGET_J7200_R5_EVM))
 
-static struct udevice *pmica;
-static struct udevice *pmicb;
+static struct udevice *pmica = NULL;
+static struct udevice *pmicb = NULL;
 
 #define GPIO_OUT_1        0x3D
 
@@ -545,30 +545,47 @@ static struct udevice *pmicb;
 
 static int resuming = -1;
 
-int board_is_resuming(void)
+static int board_get_pmic_a(void)
 {
-	int ret;
+	int ret = 0;
 
-	if (resuming >= 0)
-		goto end;
+	if (pmica)
+		return ret;
 
 	ret = uclass_get_device_by_name(UCLASS_PMIC,
-					"tps659413@48", &pmica);
-	if (ret) {
+				        "tps659413@48", &pmica);
+	if (ret)
 		printf("Getting PMICA init failed: %d\n", ret);
-		resuming = 0;
-		goto end;
-	}
-	debug("%s: PMICA is detected (%s)\n", __func__, pmica->name);
+	else
+		debug("%s: PMICA is detected (%s)\n", __func__, pmica->name);
+
+	return ret;
+}
+
+static int board_get_pmic_b(void)
+{
+	int ret = 0;
+
+	if (pmicb)
+		return ret;
 
 	ret = uclass_get_device_by_name(UCLASS_PMIC,
 					"lp876441@4c", &pmicb);
-	if (ret) {
+	if (ret)
 		printf("Getting PMICB init failed: %d\n", ret);
+	else
+		debug("%s: PMICB is detected (%s)\n", __func__, pmicb->name);
+
+	return ret;
+}
+
+int board_is_resuming(void)
+{
+	if (board_get_pmic_a())
 		resuming = 0;
+
+	if (resuming >= 0)
 		goto end;
-	}
-	debug("%s: PMICB is detected (%s)\n", __func__, pmicb->name);
 
 	if ((pmic_reg_read(pmica, SCRATCH_PAD_REG_3) == MAGIC_SUSPEND)) {
 		resuming = 1;
@@ -588,6 +605,12 @@ end:
 void board_k3_ddrss_lpddr4_release_retention(void)
 {
 	int regval;
+
+	if (board_get_pmic_a() || board_get_pmic_b()) {
+		printf("%s: Failed to run release retention (one pmic is missing)\n",
+		       __func__);
+		return;
+	}
 
 	/* Set DDR_RET Signal Low on PMIC B */
 	regval = pmic_reg_read(pmicb, GPIO_OUT_1) & ~DDR_RET_VAL;
