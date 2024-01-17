@@ -602,6 +602,11 @@ end:
 	return resuming;
 }
 
+void board_set_resuming(void)
+{
+	resuming = 1;
+}
+
 void board_k3_ddrss_lpddr4_release_retention(void)
 {
 	int regval;
