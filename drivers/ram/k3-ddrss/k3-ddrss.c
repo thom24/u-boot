@@ -557,9 +557,20 @@ static void k3_ddrss_lpddr4_exit_retention(struct k3_ddrss_desc *ddrss)
 	regval &= ~0x1F;
 	regval |= 0x01;
 	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, regval);
+#if 0
+	/* PI_INIT_WORK_FREQ = 2 */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, &regval);
+	regval &= ~0x1F;
+	regval |= 0x02;
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, regval);
+#endif
 
 	/* PI_FREQ_MAP[2:0] */
 	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x03);
+#if 0
+	/* PI_FREQ_MAP[2:0] */
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x07);
+#endif
 
 	/* Training/leveling configurations for different frequency set points */
 
