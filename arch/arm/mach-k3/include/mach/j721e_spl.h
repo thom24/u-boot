@@ -53,7 +53,7 @@
  * Linux, U-boot SPL must use the same address to restore TF-A and resume
  * entry point address
  */
-#define LPM_SAVE		0xA5000000
+#define LPM_SAVE		0xA6000000
 #define LPM_BL31		LPM_SAVE
 #define LPM_BL31_START		LPM_BL31 + BL31_SIZE
 #define LPM_BL31_SIZE		LPM_BL31_START + 4
