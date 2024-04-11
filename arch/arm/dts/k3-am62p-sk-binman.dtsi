@@ -63,7 +63,7 @@
 
 #if IS_ENABLED(CONFIG_TARGET_AM62P5_A53_EVM)
 
-#define SPL_AM62PX_SK_DTB "spl/dts/ti/k3-am62p5-sk.dtb"
+#define SPL_AM62PX_SK_DTB "spl/dts/k3-am62p5-sk.dtb"
 #define AM62PX_SK_DTB "u-boot.dtb"
 
 &binman {
