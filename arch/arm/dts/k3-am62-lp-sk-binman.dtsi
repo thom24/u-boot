@@ -8,7 +8,7 @@
 
 #ifdef CONFIG_TARGET_AM625_A53_EVM
 
-#define SPL_AM62_LP_SK_DTB "spl/dts/ti/k3-am62-lp-sk.dtb"
+#define SPL_AM62_LP_SK_DTB "spl/dts/k3-am62-lp-sk.dtb"
 
 &spl_am625_sk_dtb {
 	filename = SPL_AM62_LP_SK_DTB;
