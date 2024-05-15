@@ -90,3 +90,4 @@ CONFIG_FS_FAT_MAX_CLUSTSIZE=16384
 CONFIG_DM_SPI_FLASH=y
 
 #include <configs/am62ax_a53_usbdfu.config>
+#include <configs/am62ax_a53_usbmsc.config>
