@@ -109,3 +109,4 @@ CONFIG_SYSRESET_TI_SCI=y
 CONFIG_FS_FAT_MAX_CLUSTSIZE=16384
 
 #include <configs/am62x_a53_usbdfu.config>
+#include <configs/am62x_a53_usbmsc.config>
