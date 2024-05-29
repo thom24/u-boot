@@ -116,6 +116,7 @@
 
 		blob-ext {
 			filename = "ti-dm/j722s/ipc_echo_testb_mcu1_0_release_strip.xer5f";
+			optional;
 		};
 	};
 
