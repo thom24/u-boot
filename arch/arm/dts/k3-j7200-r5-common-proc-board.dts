@@ -99,6 +99,11 @@
 };
 
 &tps659414 {
+	esm: esm {
+		compatible = "ti,tps659413-esm";
+		bootph-pre-ram;
+	};
+
 	regulators {
 		bucka1: buck1 {
 			bootph-pre-ram;
