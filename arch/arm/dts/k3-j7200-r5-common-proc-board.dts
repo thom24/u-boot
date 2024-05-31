@@ -81,6 +81,7 @@
 };
 
 &wkup_vtm0 {
+	vdd-supply-2 = <&buckb1>;
 	bootph-pre-ram;
 };
 
