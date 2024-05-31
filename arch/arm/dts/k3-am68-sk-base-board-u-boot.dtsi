@@ -133,3 +133,8 @@
 	dr_mode = "peripheral";
 	bootph-all;
 };
+
+&chipid {
+	bootph-all;
+};
+
