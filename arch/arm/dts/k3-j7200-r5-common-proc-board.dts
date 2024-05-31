@@ -108,3 +108,11 @@
 	vdd-supply-2 = <&buckb1>;
 	bootph-pre-ram;
 };
+
+&tps659414 {
+	regulators {
+		bucka1: buck1 {
+			bootph-pre-ram;
+		};
+	};
+};
