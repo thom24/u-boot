@@ -96,3 +96,12 @@
 &mcu_udmap {
     ti,sci = <&dm_tifs>;
 };
+
+&tps659414 {
+	regulators {
+		bucka1: buck1 {
+			bootph-pre-ram;
+		};
+	};
+};
+
