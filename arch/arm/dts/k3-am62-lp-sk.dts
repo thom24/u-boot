@@ -14,6 +14,7 @@
 	model = "Texas Instruments AM62x LP SK";
 
 	vmain_pd: regulator-0 {
+		bootph-all;
 		/* TPS65988 PD CONTROLLER OUTPUT */
 		compatible = "regulator-fixed";
 		regulator-name = "vmain_pd";
@@ -25,6 +26,7 @@
 
 	vcc_5v0: regulator-1 {
 		/* Output of TPS630702RNMR */
+		bootph-all;
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_5v0";
 		regulator-min-microvolt = <5000000>;
@@ -36,6 +38,7 @@
 
 	vcc_3v3_sys: regulator-2 {
 		/* output of LM61460-Q1 */
+		bootph-all;
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_3v3_sys";
 		regulator-min-microvolt = <3300000>;
@@ -47,6 +50,7 @@
 
 	vdd_mmc1: regulator-3 {
 		/* TPS22918DBVR */
+		bootph-all;
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_mmc1";
 		regulator-min-microvolt = <3300000>;
@@ -58,6 +62,7 @@
 	};
 
 	vddshv_sdio: regulator-4 {
+		bootph-all;
 		compatible = "regulator-gpio";
 		regulator-name = "vddshv_sdio";
 		pinctrl-names = "default";
@@ -74,18 +79,21 @@
 
 &main_pmx0 {
 	vddshv_sdio_pins_default: vddshv-sdio-default-pins {
+		bootph-all;
 		pinctrl-single,pins = <
 			AM62X_IOPAD(0x07c, PIN_OUTPUT, 7) /* (M19) GPMC0_CLK.GPIO0_31 */
 		>;
 	};
 
 	main_gpio1_ioexp_intr_pins_default: main-gpio1-ioexp-intr-default-pins {
+		bootph-all;
 		pinctrl-single,pins = <
 			AM62X_IOPAD(0x01d4, PIN_INPUT, 7) /* (C13) UART0_RTSn.GPIO1_23 */
 		>;
 	};
 
 	pmic_irq_pins_default: pmic-irq-default-pins {
+		bootph-all;
 		pinctrl-single,pins = <
 			AM62X_IOPAD(0x01f4, PIN_INPUT, 0) /* (B16) EXTINTn */
 		>;
@@ -93,7 +101,9 @@
 };
 
 &main_i2c1 {
+	bootph-all;
 	exp1: gpio@22 {
+		bootph-all;
 		compatible = "ti,tca6424";
 		reg = <0x22>;
 		gpio-controller;
@@ -150,7 +160,9 @@
 };
 
 &main_i2c0 {
+	bootph-all;
 	tps65219: pmic@30 {
+		bootph-all;
 		compatible = "ti,tps65219";
 		reg = <0x30>;
 		buck1-supply = <&vcc_3v3_sys>;
@@ -227,5 +239,14 @@
 };
 
 &tlv320aic3106 {
+	bootph-all;
 	DVDD-supply = <&buck2_reg>;
+};
+
+&main_gpio0 {
+	bootph-all;
+};
+
+&main_gpio1 {
+	bootph-all;
 };
