@@ -45,3 +45,7 @@
 	dr_mode = "peripheral";
 	bootph-all;
 };
+
+&phy_gmii_sel {
+	bootph-all;
+};
