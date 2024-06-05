@@ -21,3 +21,14 @@
 		bootph-pre-ram;
 	};
 };
+
+&wkup_conf {
+	cpsw_mac_syscon: ethernet-mac-syscon@200 {
+		compatible = "ti,am62p-cpsw-mac-efuse", "syscon";
+		reg = <0x200 0x8>;
+	};
+};
+
+&cpsw_port1 {
+	ti,syscon-efuse = <&cpsw_mac_syscon 0x0>;
+};
