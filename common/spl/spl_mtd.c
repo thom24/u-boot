@@ -20,7 +20,7 @@ uint32_t __weak spl_mtd_get_uboot_offs(void)
 static ulong spl_mtd_fit_read(struct spl_load_info *load, ulong offs,
 			      ulong size, void *dst)
 {
-	struct mtd_info *mtd = load->dev;
+	struct mtd_info *mtd = load->priv;
 	int err;
 	size_t ret_len;
 
@@ -64,17 +64,13 @@ static int spl_mtd_load_image(struct spl_image_info *spl_image,
 	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT) &&
 	    image_get_magic(header) == FDT_MAGIC) {
 		debug("Found FIT\n");
-		load.dev = mtd;
-		load.priv = NULL;
-		load.filename = NULL;
+		load.priv = mtd;
 		load.bl_len = 1;
 		load.read = spl_mtd_fit_read;
 		return spl_load_simple_fit(spl_image, &load,
 					   spl_mtd_get_uboot_offs(), header);
 	} else if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER)) {
-		load.dev = mtd;
-		load.priv = NULL;
-		load.filename = NULL;
+		load.priv = mtd;
 		load.bl_len = 1;
 		load.read = spl_mtd_fit_read;
 		return spl_load_imx_container(spl_image, &load,
