@@ -901,7 +901,7 @@ config SPL_MTD
 
 config SPL_MTD_LOAD
 	bool "Support loading from MTD framework"
-	depends on SPL_MTD_SUPPORT
+	depends on SPL_MTD
 	help
 	  Enable support for loading next stage, U-Boot or otherwise, from
 	  MTD Framework in U-Boot SPL.
