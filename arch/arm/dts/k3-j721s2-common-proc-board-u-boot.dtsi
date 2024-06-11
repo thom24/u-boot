@@ -124,6 +124,12 @@
 &ospi0 {
 	ospi0_nor: flash@0 {
 		bootph-all;
+		partitions {
+			bootph-all;
+			partition@3fc0000 {
+				bootph-all;
+			};
+		};
 	};
 };
 
@@ -132,7 +138,10 @@
 };
 
 &ospi1 {
-	status = "disabled";
+	bootph-all;
+	ospi1_nor: flash@0 {
+		bootph-all;
+	};
 };
 
 &usbss0 {
