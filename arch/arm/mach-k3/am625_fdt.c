@@ -4,8 +4,12 @@
  */
 
 #include <asm/hardware.h>
+#include <asm/global_data.h>
 #include "common_fdt.h"
 #include <fdt_support.h>
+#include <linux/printk.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static void fdt_fixup_cores_nodes_am625(void *blob, int core_nr)
 {
@@ -38,6 +42,39 @@ static void fdt_fixup_pru_node_am625(void *blob, int has_pru)
 		fdt_del_node_path(blob, "/bus@f0000/pruss@30040000");
 }
 
+/*
+ * Das U-Boot, having initialized DRAM in earlier stages of boot, would
+ * know its capacity and therefore should inform Linux via updating the
+ * device-tree blob before jumping to Linux.
+ *
+ * This helps our distrobutions remain agnostic to the hardware they
+ * find themselves running on. Ideally we should be creating the memory{}
+ * node ourself at U-Boot runtime to avoid any confusion for devs.
+ */
+static void fdt_fixup_memory_node_am625(void *blob)
+{
+	u64 s[CONFIG_NR_DRAM_BANKS];
+	u64 e[CONFIG_NR_DRAM_BANKS];
+	u64 t = gd->ram_size;
+	int i = 0;
+
+	pr_info("adjusting ram size to: %08llx\n", t);
+	for (; i < CONFIG_NR_DRAM_BANKS; i++) {
+		s[i] = gd->bd->bi_dram[i].start;
+		e[i] = gd->bd->bi_dram[i].size;
+
+		if (e[i] > t)
+			e[i] = t;
+		t -= e[i];
+
+		pr_debug("bank %02d start: %08llx\n", i, s[i]);
+		pr_debug("bank %02d size : %08llx\n", i, e[i]);
+	}
+
+	if (fdt_fixup_memory_banks(blob, s, e, CONFIG_NR_DRAM_BANKS))
+		pr_err("Oops: failed to resize the memory{} node\n");
+}
+
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	fdt_fixup_cores_nodes_am625(blob, k3_get_core_nr());
@@ -45,6 +82,7 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	fdt_fixup_pru_node_am625(blob, k3_has_pru());
 	fdt_fixup_reserved(blob, "tfa", CONFIG_K3_ATF_LOAD_ADDR, 0x80000);
 	fdt_fixup_reserved(blob, "optee", CONFIG_K3_OPTEE_LOAD_ADDR, 0x1800000);
+	fdt_fixup_memory_node_am625(blob);
 
 	return 0;
 }
