@@ -534,3 +534,11 @@
 &mcu_gpio_intr {
 	status = "reserved";
 };
+
+&phy_gmii_sel {
+	bootph-all;
+};
+
+&main_pktdma {
+	bootph-all;
+};
