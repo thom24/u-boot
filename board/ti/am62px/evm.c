@@ -8,6 +8,7 @@
 
 #include <asm/arch/hardware.h>
 #include <asm/io.h>
+#include <cpu_func.h>
 #include <dm/uclass.h>
 #include <env.h>
 #include <fdt_support.h>
@@ -30,4 +31,10 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
 		fixup_memory_node(spl_image);
 	}
 }
+
+void spl_board_init(void)
+{
+	enable_caches();
+}
+
 #endif
