@@ -641,6 +641,7 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
+		bootph-all;
 
 		ospi0: spi@fc40000 {
 			compatible = "ti,am654-ospi", "cdns,qspi-nor";
