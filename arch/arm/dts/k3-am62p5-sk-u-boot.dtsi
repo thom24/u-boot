@@ -26,9 +26,41 @@
 	cpsw_mac_syscon: ethernet-mac-syscon@200 {
 		compatible = "ti,am62p-cpsw-mac-efuse", "syscon";
 		reg = <0x200 0x8>;
+		bootph-all;
+	};
+};
+
+&cpsw3g {
+	ethernet-ports {
+		bootph-all;
 	};
 };
 
 &cpsw_port1 {
 	ti,syscon-efuse = <&cpsw_mac_syscon 0x0>;
+	bootph-all;
+};
+
+&main_pktdma {
+	bootph-all;
+};
+
+&main_rgmii1_pins_default {
+	bootph-all;
+};
+
+&main_mdio1_pins_default {
+	bootph-all;
+};
+
+&cpsw3g_phy0 {
+	bootph-all;
+};
+
+&cpsw3g_mdio {
+	bootph-all;
+};
+
+&phy_gmii_sel {
+	bootph-all;
 };
