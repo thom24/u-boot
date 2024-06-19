@@ -122,3 +122,10 @@
 &mcu_udmap {
 	ti,sci = <&dm_tifs>;
 };
+
+&tps659413 {
+	esm: esm {
+		compatible = "ti,tps659413-esm";
+		bootph-pre-ram;
+	};
+};
