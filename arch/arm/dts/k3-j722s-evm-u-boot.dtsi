@@ -46,3 +46,20 @@
 	reg-names = "gcfg", "bchanrt", "rchanrt", "tchanrt",
 		    "ringrt", "cfg", "tchan", "rchan";
 };
+
+&usbss0 {
+	bootph-pre-ram;
+};
+
+&usb0 {
+	dr_mode = "peripheral";
+	bootph-pre-ram;
+};
+
+&usbss1 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+};
