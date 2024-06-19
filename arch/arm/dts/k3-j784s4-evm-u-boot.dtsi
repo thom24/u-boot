@@ -40,6 +40,13 @@
 
 &wkup_pmx0 {
 	bootph-pre-ram;
+
+	typec_dir_gpio_pins_default: typec-dir-gpio-pins-default {
+		pinctrl-single,pins = <
+			/* (A33) MCU_OSPI0_CSn1.WKUP_GPIO0_28 */
+			J784S4_WKUP_IOPAD(0x030, PIN_INPUT, 7)
+		>;
+	};
 };
 
 &fss {
@@ -80,4 +87,25 @@
 
 &ospi1_nor {
 	bootph-pre-ram;
+};
+
+&main_usbss0_pins_default {
+	bootph-pre-ram;
+};
+
+&usbss0 {
+	bootph-pre-ram;
+};
+
+&usb0 {
+	dr_mode = "peripheral";
+	bootph-pre-ram;
+};
+
+&serdes_ln_ctrl {
+	u-boot,mux-autoprobe;
+};
+
+&usb_serdes_mux {
+	u-boot,mux-autoprobe;
 };

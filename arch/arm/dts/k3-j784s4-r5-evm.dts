@@ -129,3 +129,18 @@
 		bootph-pre-ram;
 	};
 };
+
+&main_pmx0 {
+	bootph-pre-ram;
+};
+
+&usbss0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_usbss0_pins_default>;
+	ti,vbus-divider;
+};
+
+&usb0 {
+	dr_mode = "peripheral";
+	maximum-speed = "super-speed";
+};
