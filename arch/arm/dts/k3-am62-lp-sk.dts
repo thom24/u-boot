@@ -272,6 +272,7 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&ospi0_pins_default>;
+	assigned-clock-rates = <200000000>;
 	bootph-all;
 
 	flash@0{
@@ -279,12 +280,12 @@
 		reg = <0x0>;
 		spi-tx-bus-width = <8>;
 		spi-rx-bus-width = <8>;
-		spi-max-frequency = <25000000>;
+		spi-max-frequency = <50000000>;
 		cdns,tshsl-ns = <60>;
 		cdns,tsd2d-ns = <60>;
 		cdns,tchsh-ns = <60>;
 		cdns,tslch-ns = <60>;
-		cdns,read-delay = <2>;
+		cdns,read-delay = <1>;
 		cdns,phy-mode;
 		bootph-all;
 
