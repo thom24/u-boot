@@ -14,12 +14,21 @@
 #include <fdt_support.h>
 #include <spl.h>
 
+#include "../common/fdt_ops.h"
 #include "../common/k3-ddr-init.h"
 
 int board_init(void)
 {
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_BOARD_LATE_INIT)
+int __maybe_unused board_late_init(void)
+{
+	ti_set_fdt_env(NULL, NULL);
+	return 0;
+}
+#endif
 
 #if defined(CONFIG_SPL_BUILD)
 void spl_perform_fixups(struct spl_image_info *spl_image)
