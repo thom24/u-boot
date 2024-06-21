@@ -458,6 +458,10 @@
 	};
 };
 
+&mcu_m4fss {
+	status = "okay";
+};
+
 &usbss0 {
 	bootph-all;
 	status = "okay";
