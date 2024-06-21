@@ -63,3 +63,7 @@
 &usb1 {
 	status = "disabled";
 };
+
+&usb0_phy_ctrl {
+	bootph-pre-ram;
+};
