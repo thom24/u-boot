@@ -77,3 +77,7 @@
 	dr_mode = "peripheral";
 	bootph-pre-ram;
 };
+
+&usb0_phy_ctrl {
+	bootph-pre-ram;
+};
