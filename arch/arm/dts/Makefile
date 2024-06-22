@@ -1435,7 +1435,8 @@ dtb-$(CONFIG_SOC_K3_J722S) += k3-j722s-evm.dtb \
 dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
 			      k3-am642-r5-evm.dtb \
 			      k3-am642-sk.dtb \
-			      k3-am642-r5-sk.dtb
+			      k3-am642-r5-sk.dtb \
+			      k3-am642-evm-nand.dtbo
 
 dtb-$(CONFIG_SOC_K3_AM625) += k3-am625-sk.dtb \
 			      k3-am625-r5-sk.dtb \
