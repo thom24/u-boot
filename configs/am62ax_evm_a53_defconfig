@@ -129,4 +129,4 @@ CONFIG_DM_SPI_FLASH=y
 CONFIG_CMD_REMOTEPROC=y
 
 #include <configs/am62x_a53_usbdfu.config>
-#include <configs/am62ax_a53_usbmsc.config>
+#include <configs/am62x_a53_usbmsc.config>
