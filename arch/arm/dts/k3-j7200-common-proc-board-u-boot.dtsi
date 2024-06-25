@@ -136,6 +136,7 @@
 };
 
 &fss {
+	compatible = "syscon", "simple-mfd";
 	bootph-all;
 };
 
@@ -175,7 +176,12 @@
 	};
 };
 
+&mcu_fss0_hpb0_pins_default {
+	bootph-all;
+};
+
 &hbmc_mux {
+	compatible = "mmio-mux";
 	bootph-all;
 };
 
