@@ -220,3 +220,15 @@
 &cpsw_port2 {
 	status = "disabled";
 };
+
+&gpmc0 {
+	bootph-all;
+};
+
+&elm0 {
+	bootph-all;
+};
+
+&main_gpio0 {
+	bootph-all;
+};

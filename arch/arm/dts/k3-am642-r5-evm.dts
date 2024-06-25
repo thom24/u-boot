@@ -203,3 +203,5 @@
 		};
 	};
 };
+
+#include "k3-am642-evm-nand.dtsi"
