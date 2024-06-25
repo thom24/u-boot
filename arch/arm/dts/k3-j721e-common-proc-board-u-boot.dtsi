@@ -153,10 +153,23 @@
 };
 
 &fss {
+	compatible = "syscon", "simple-mfd";
 	bootph-all;
 };
 
 &wkup_gpio0 {
+	bootph-all;
+};
+
+&hbmc {
+	bootph-all;
+	flash@0,0 {
+		bootph-all;
+	};
+};
+
+&hbmc_mux {
+	compatible = "mmio-mux";
 	bootph-all;
 };
 
