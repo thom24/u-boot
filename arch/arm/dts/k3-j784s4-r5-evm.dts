@@ -144,3 +144,8 @@
 	dr_mode = "peripheral";
 	maximum-speed = "super-speed";
 };
+
+&wkup_vtm0 {
+	bootph-pre-ram;
+	vdd-supply-2 = <&tps62873a>;
+};
