@@ -17,6 +17,7 @@ config TARGET_AM62A7_A53_EVM
 	imply BOARD
 	imply SPL_BOARD
 	imply TI_I2C_BOARD_DETECT
+	imply TI_COMMON_CMD_OPTIONS
 
 config TARGET_AM62A7_R5_EVM
 	bool "TI K3 based AM62A7 EVM running on R5"
