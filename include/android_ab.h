@@ -9,6 +9,8 @@
 struct blk_desc;
 struct disk_partition;
 
+#include <stdbool.h>
+
 /* Android standard boot slot names are 'a', 'b', 'c', ... */
 #define BOOT_SLOT_NAME(slot_num) ('a' + (slot_num))
 
