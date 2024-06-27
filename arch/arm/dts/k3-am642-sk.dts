@@ -644,6 +644,10 @@
 			<&main_r5fss1_core1_memory_region>;
 };
 
+&mcu_m4fss {
+	status = "okay";
+};
+
 &ecap0 {
 	status = "okay";
 	/* PWM is available on Pin 1 of header J3 */

@@ -746,6 +746,10 @@
 			<&main_r5fss1_core1_memory_region>;
 };
 
+&mcu_m4fss {
+	status = "okay";
+};
+
 &serdes_ln_ctrl {
 	idle-states = <AM64_SERDES0_LANE0_PCIE0>;
 };
