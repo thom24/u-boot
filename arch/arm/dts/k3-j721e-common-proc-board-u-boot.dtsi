@@ -218,6 +218,7 @@
 	bootph-all;
 
 	flash@0 {
+		cdns,phy-mode;
 		bootph-all;
 	};
 };
