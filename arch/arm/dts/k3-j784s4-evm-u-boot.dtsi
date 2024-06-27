@@ -23,13 +23,6 @@
 	bootph-pre-ram;
 };
 
-&sms {
-	k3_sysreset: sysreset-controller {
-		compatible = "ti,sci-sysreset";
-		bootph-pre-ram;
-	};
-};
-
 &wkup_gpio_pins_default {
 	bootph-pre-ram;
 };
