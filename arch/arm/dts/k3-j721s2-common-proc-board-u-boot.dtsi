@@ -119,6 +119,7 @@
 
 &ospi0 {
 	ospi0_nor: flash@0 {
+		cdns,phy-mode;
 		bootph-all;
 		partitions {
 			bootph-all;
