@@ -15,6 +15,7 @@
 #include <env.h>
 #include <fdt_support.h>
 #include <spl.h>
+#include "../common/fdt_ops.h"
 
 #include "../common/k3-ddr-init.h"
 
@@ -85,5 +86,13 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
 	}
 
 	detect_enable_spinand(spl_image->fdt_addr);
+}
+#endif
+
+#if IS_ENABLED(CONFIG_BOARD_LATE_INIT)
+int board_late_init(void)
+{
+	ti_set_fdt_env(NULL, NULL);
+	return 0;
 }
 #endif
