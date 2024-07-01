@@ -15,24 +15,9 @@
 	};
 };
 
-&cbass_main{
-	bootph-all;
-};
-
 &main_timer0 {
 	bootph-all;
 	clock-frequency = <200000000>;
-};
-
-&main_conf {
-	bootph-all;
-	chipid@14 {
-		bootph-all;
-	};
-};
-
-&main_pmx0 {
-	bootph-all;
 };
 
 &main_i2c0_pins_default {
@@ -51,27 +36,7 @@
 	bootph-all;
 };
 
-&dmss {
-	bootph-all;
-};
-
 &secure_proxy_main {
-	bootph-all;
-};
-
-&dmsc {
-	bootph-all;
-};
-
-&k3_pds {
-	bootph-all;
-};
-
-&k3_clks {
-	bootph-all;
-};
-
-&k3_reset {
 	bootph-all;
 };
 
@@ -133,16 +98,6 @@
 };
 
 &main_bcdma {
-	reg = <0x00 0x485c0100 0x00 0x100>,
-	      <0x00 0x4c000000 0x00 0x20000>,
-	      <0x00 0x4a820000 0x00 0x20000>,
-	      <0x00 0x4aa40000 0x00 0x20000>,
-	      <0x00 0x4bc00000 0x00 0x100000>,
-	      <0x00 0x48600000 0x00 0x8000>,
-	      <0x00 0x484a4000 0x00 0x2000>,
-	      <0x00 0x484c2000 0x00 0x2000>;
-	reg-names = "gcfg", "bchanrt", "rchanrt", "tchanrt", "ringrt",
-		    "cfg", "tchan", "rchan";
 	bootph-all;
 };
 
