@@ -96,6 +96,10 @@
 	bootph-pre-ram;
 };
 
+&serdes0_usb_link {
+	bootph-pre-ram;
+};
+
 &serdes_ln_ctrl {
 	u-boot,mux-autoprobe;
 	compatible = "mmio-mux";
