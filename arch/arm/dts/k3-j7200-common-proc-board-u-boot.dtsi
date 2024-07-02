@@ -191,6 +191,10 @@
 	bootph-all;
 };
 
+&mcu_fss0_ospi0_pins_default {
+	bootph-all;
+};
+
 &ospi0 {
 	bootph-all;
 
