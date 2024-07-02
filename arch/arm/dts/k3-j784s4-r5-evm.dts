@@ -123,6 +123,10 @@
 	ti,sci = <&dm_tifs>;
 };
 
+&bucka12{
+	bootph-pre-ram;
+};
+
 &tps659413 {
 	esm: esm {
 		compatible = "ti,tps659413-esm";

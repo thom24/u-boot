@@ -104,3 +104,14 @@
 	bootph-pre-ram;
 	vdd-supply-2 = <&tps62873a>;
 };
+
+&bucka12 {
+	bootph-pre-ram;
+};
+
+&tps659413 {
+	esm: esm {
+		compatible = "ti,tps659413-esm";
+		bootph-pre-ram;
+	};
+};
