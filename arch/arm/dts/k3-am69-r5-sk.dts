@@ -92,6 +92,10 @@
 	      <0x0 0x50000000 0x0 0x8000000>;
 };
 
+&ospi0_nor {
+	cdns,phy-mode;
+};
+
 &mcu_ringacc {
 	ti,sci = <&dm_tifs>;
 };

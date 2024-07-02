@@ -58,6 +58,7 @@
 	bootph-pre-ram;
 
 	ospi0_nor: flash@0 {
+		cdns,phy-mode;
 		bootph-pre-ram;
 
 		partitions {
