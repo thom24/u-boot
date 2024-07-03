@@ -205,10 +205,15 @@
 };
 
 &serdes_ln_ctrl {
+	compatible = "mmio-mux";
+	mux-reg-masks = <0x4080 0x3>, <0x4084 0x3>, /* SERDES0 lane0/1 select */
+	                <0x4088 0x3>, <0x408c 0x3>; /* SERDES0 lane2/3 select */
 	bootph-all;
 };
 
 &usb_serdes_mux {
+	compatible = "mmio-mux";
+	mux-reg-masks = <0x4000 0x8000000>; /* USB0 to SERDES0 lane 1/3 mux */
 	bootph-all;
 };
 
