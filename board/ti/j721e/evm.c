@@ -527,7 +527,7 @@ int board_is_resuming(void)
 		goto end;
 
 	ret = uclass_get_device_by_name(UCLASS_PMIC,
-					"tps659413@48", &pmica);
+					"pmic@48", &pmica);
 	if (ret) {
 		printf("Getting PMICA init failed: %d\n", ret);
 		resuming = 0;
@@ -536,7 +536,7 @@ int board_is_resuming(void)
 	debug("%s: PMICA is detected (%s)\n", __func__, pmica->name);
 
 	ret = uclass_get_device_by_name(UCLASS_PMIC,
-					"lp876441@4c", &pmicb);
+					"pmic@4c", &pmicb);
 	if (ret) {
 		printf("Getting PMICB init failed: %d\n", ret);
 		resuming = 0;
