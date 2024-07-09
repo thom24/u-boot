@@ -114,7 +114,14 @@
 };
 
 &ospi0 {
-	status = "disabled";
+
+	ospi0_nor: flash@0 {
+		cdns,phy-mode;
+
+		partition@3fc0000 {
+			bootph-all;
+		};
+	};
 };
 
 &ospi1 {
