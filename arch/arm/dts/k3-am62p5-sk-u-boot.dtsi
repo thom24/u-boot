@@ -90,10 +90,12 @@
 	bootph-all;
 };
 
+/* Required for USB DFU Boot */
 &usbss0 {
 	bootph-pre-ram;
 };
 
+/* Required for USB DFU Boot */
 &usb0 {
 	/* Enable peripheral mode only during bootup
 	 * to support DFU while allowing Linux to stay
@@ -103,6 +105,7 @@
 	bootph-pre-ram;
 };
 
+/* Required for USB DFU Boot */
 &usb0_phy_ctrl {
 	bootph-pre-ram;
 };
