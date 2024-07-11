@@ -45,6 +45,12 @@
 	clock-frequency = <25000000>;
 };
 
+/* Required for USB DFU Boot */
 &usb0 {
 	dr_mode = "peripheral";
+};
+
+/* Required for USB DFU Boot */
+&usb0_phy_ctrl {
+	bootph-all;
 };
