@@ -69,3 +69,13 @@
 &phy_gmii_sel {
 	bootph-all;
 };
+
+/* Required for USB DFU Boot */
+&usb0 {
+	dr_mode = "peripheral";
+};
+
+/* Required for USB DFU Boot */
+&usb0_phy_ctrl {
+	bootph-all;
+};
