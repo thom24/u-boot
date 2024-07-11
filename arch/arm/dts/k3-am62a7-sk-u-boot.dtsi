@@ -168,15 +168,18 @@
 	bootph-all;
 };
 
+/* Required for USB DFU Boot */
 &usbss0 {
 	bootph-all;
 };
 
+/* Required for USB DFU Boot */
 &usb0 {
 	dr_mode = "peripheral";
 	bootph-all;
 };
 
+/* Required for USB DFU Boot */
 &usb0_phy_ctrl {
 	bootph-all;
 };
