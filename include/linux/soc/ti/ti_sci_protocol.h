@@ -595,6 +595,16 @@ struct ti_sci_fwl_ops {
 };
 
 /**
+ * struct ti_sci_crypt_ops - {En,De}cryption specific operations
+ * @decrypt_tfa: Request for decrypting TFA at specific address.
+ */
+struct ti_sci_crypt_ops {
+	int (*decrypt_tfa)(const struct ti_sci_handle *handle,
+			   u64 *encrypted_address, u64 unencrypted_address,
+			   u32 max_unencrypted_len);
+};
+
+/**
  * struct ti_sci_ops - Function support for TI SCI
  * @board_ops:	Miscellaneous operations
  * @dev_ops:	Device specific operations
@@ -615,6 +625,7 @@ struct ti_sci_ops {
 	struct ti_sci_rm_psil_ops rm_psil_ops;
 	struct ti_sci_rm_udmap_ops rm_udmap_ops;
 	struct ti_sci_fwl_ops fwl_ops;
+	struct ti_sci_crypt_ops crypt_ops;
 };
 
 /**

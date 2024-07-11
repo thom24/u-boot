@@ -80,6 +80,9 @@
 #define TISCI_MSG_FWL_GET		0x9001
 #define TISCI_MSG_FWL_CHANGE_OWNER	0x9002
 
+#define TISCI_MSG_SA2UL_AES_ENCRYPT	0x9040
+#define TISCI_MSG_SA2UL_AES_DECRYPT	0x9041
+
 /**
  * struct ti_sci_msg_hdr - Generic Message Header for All messages and responses
  * @type:	Type of messages: One of TI_SCI_MSG* values
@@ -1528,6 +1531,36 @@ struct ti_sci_msg_fwl_change_owner_info_resp {
 	u8			owner_index;
 	u8			owner_privid;
 	u16			owner_permission_bits;
+} __packed;
+
+/**
+ * struct ti_sci_msg_decrypt_tfa_req - Request for TISCI_MSG_SA2UL_AES_DECRYPT.
+ *
+ * @hdr:		Generic Header
+ * @encrypted_address:	Address where the TFA lies unencrypted
+ * @max_unencrypted_len: Size of region reserved for unencrypted TFA
+ *
+ * This message is to be sent when the system is resuming from suspend, in order
+ * to restore the TFA.
+ * The TIFS will decrypt the TFA at specified location and restore it in SRAM.
+ */
+/* TODO: API not yet defined */
+struct ti_sci_msg_decrypt_tfa_req {
+	struct ti_sci_msg_hdr	hdr;
+	u64			encrypted_address;
+	u32			max_unencrypted_len;
+} __packed;
+
+/**
+ * struct ti_sci_msg_decrypt_tfa_resp - Response for TISCI_MSG_SA2UL_AES_DECRYPT.
+ *
+ * @hdr:		Generic Header
+ * @unencrypted_address: Address where the unencrypted TFA has be restored
+ */
+/* TODO: API not yet defined */
+struct ti_sci_msg_decrypt_tfa_resp {
+	struct ti_sci_msg_hdr	hdr;
+	u64 unencrypted_address;
 } __packed;
 
 #endif /* __TI_SCI_H */
