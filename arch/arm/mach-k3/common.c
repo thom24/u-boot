@@ -308,27 +308,22 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 	if (board_is_resuming()) {
 #if IS_ENABLED(CONFIG_SOC_K3_J721E)
+		u64 tfa_address;
+
 		if (!valid_elf_image(LPM_DM))
 			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
 			      __func__);
 
 		loadaddr = load_elf_image_phdr(LPM_DM);
 
-		memcpy((void *)*(ulong *)(LPM_BL31_START),
-		       (void *)LPM_BL31, *(ulong *)(LPM_BL31_SIZE));
+		ret = ti_sci->ops.crypt_ops.decrypt_tfa(ti_sci, &tfa_address,
+							LPM_SAVE, BL31_SIZE);
+		if (ret)
+			panic("%s: ATF failed to decrytp TFA\n", __func__);
 
-		ret = rproc_load(1, *(ulong *)(LPM_BL31_START), 0x200);
+		ret = rproc_load(1, tfa_address, 0x200);
 		if (ret)
 			panic("%s: ATF failed to load on rproc (%d)\n", __func__, ret);
-
-#if (CONFIG_IS_ENABLED(FIT_IMAGE_POST_PROCESS) && IS_ENABLED(CONFIG_SYS_K3_SPL_ATF))
-		debug("%s: Authenticating image: addr=%lx, size=%ld, os=%s\n", __func__,
-		      *(ulong *)(LPM_BL31_START), *(ulong *)(LPM_BL31_SIZE),
-		      image_os_match[IMAGE_ID_ATF]);
-
-		ti_secure_image_post_process((void *)LPM_BL31_START,
-					     (size_t *)LPM_BL31_SIZE);
-#endif
 
 		debug("%s: jumping to address %x\n", __func__, loadaddr);
 		goto start_arm64;
@@ -349,14 +344,6 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	if (!fit_image_info[IMAGE_ID_ATF].image_start)
 		fit_image_info[IMAGE_ID_ATF].image_start =
 			spl_image->entry_point;
-
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
-	/* Save TF-A image, as at resume fit image is not processed */
-	memcpy((void *)LPM_BL31, (void *)fit_image_info[IMAGE_ID_ATF].image_start,
-	       fit_image_info[IMAGE_ID_ATF].image_len);
-	*(ulong *)(LPM_BL31_START) = fit_image_info[IMAGE_ID_ATF].image_start;
-	*(ulong *)(LPM_BL31_SIZE) = fit_image_info[IMAGE_ID_ATF].image_len;
-#endif
 
 	ret = rproc_load(1, fit_image_info[IMAGE_ID_ATF].image_start, 0x200);
 	if (ret)

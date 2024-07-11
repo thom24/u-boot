@@ -55,9 +55,7 @@
  */
 #define LPM_SAVE		0xA5000000
 #define LPM_BL31		LPM_SAVE
-#define LPM_BL31_START		LPM_BL31 + BL31_SIZE
-#define LPM_BL31_SIZE		LPM_BL31_START + 4
-#define LPM_DM			LPM_BL31_SIZE  + 4
+#define LPM_DM			LPM_BL31 + BL31_SIZE
 
 /* Check if the copy of TF-A and DM-Firmware in DRAM does not overlap an
  * over memory section.
