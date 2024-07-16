@@ -20,3 +20,10 @@ F:	arch/arm/dts/k3-am69-sk-u-boot.dtsi
 F:	arch/arm/dts/k3-am69-r5-sk.dts
 F:	configs/am69_sk_r5_defconfig
 F:	configs/am69_sk_a72_defconfig
+
+J742S2 EVM BOARD
+M:	Manorit Chawdhry <m-chawdhry@ti.com>
+S:	Maintained
+F:	arch/arm/dts/k3-j742s2.dtsi
+F:	arch/arm/dts/k3-j742s2-main.dtsi
+F:	arch/arm/dts/k3-j742s2-evm.dts
