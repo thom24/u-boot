@@ -19,9 +19,14 @@ struct soc_ti_k3_plat {
 static const char *get_family_string(u32 idreg)
 {
 	const char *family;
+	u32 jtag_dev_id;
+	u32 pkg;
 	u32 soc;
 
+	jtag_dev_id = readl(CTRLMMR_WKUP_JTAG_DEVICE_ID);
+
 	soc = (idreg & JTAG_ID_PARTNO_MASK) >> JTAG_ID_PARTNO_SHIFT;
+	pkg = (jtag_dev_id & JTAG_DEV_PKG_MASK) >> JTAG_DEV_PKG_SHIFT;
 
 	switch (soc) {
 	case JTAG_ID_PARTNO_AM62X:
@@ -52,8 +57,16 @@ static const char *get_family_string(u32 idreg)
 		family = "J722S";
 		break;
 	case JTAG_ID_PARTNO_J784S4:
-		family = "J784S4";
-		break;
+		{
+			/* Keep default family as J784S4 */
+			family = "J784S4";
+			switch (pkg) {
+			case JTAG_DEVICE_ID_PKG_J742S2:
+				family = "J742S2";
+				break;
+			}
+			break;
+		}
 	default:
 		family = "Unknown Silicon";
 	};

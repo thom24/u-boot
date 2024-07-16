@@ -82,6 +82,8 @@
 #define JTAG_ID_PARTNO_J722S    0xbba0
 #define JTAG_ID_PARTNO_J784S4	0xbb80
 
+#define JTAG_DEVICE_ID_PKG_J742S2 0x7
+
 #define K3_SOC_ID(id, ID) \
 static inline bool soc_is_##id(void) \
 { \
