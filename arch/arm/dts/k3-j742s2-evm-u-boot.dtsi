@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (C) 2024 Texas Instruments Incorporated - https://www.ti.com/
+ */
+
+#include "k3-j784s4-evm-u-boot.dtsi"
+
+&sms {
+	k3_sysreset: sysreset-controller {
+		compatible = "ti,sci-sysreset";
+		bootph-pre-ram;
+	};
+};
+
+#ifdef CONFIG_TARGET_J742S2_R5_EVM
+
+&ti_fs_enc {
+	filename = "ti-sysfw/ti-fs-firmware-j742s2-hs-enc.bin";
+};
+
+&ti_fs_enc_fs {
+	filename = "ti-sysfw/ti-fs-firmware-j742s2-hs-fs-enc.bin";
+};
+
+/delete-node/ &tiboot3_j784s4_gp;
+
+&tiboot3_j784s4_hs_fs {
+	filename = "tiboot3-j742s2-hs-fs-evm.bin";
+	symlink = "tiboot3.bin";
+};
+
+&tiboot3_j784s4_hs {
+	filename = "tiboot3-j742s2-hs-evm.bin";
+};
+
+#endif
+
+#ifdef CONFIG_TARGET_J742S2_A72_EVM
+
+#define SPL_J742S2_SK_DTB "spl/dts/k3-j742s2-evm.dtb"
+#define J742S2_SK_DTB "u-boot.dtb"
+
+&j784s4_dm {
+	filename = "ti-dm/j742s2/ipc_echo_testb_mcu1_0_release_strip.xer5f";
+};
+
+&spl_j784s4_evm_dtb {
+	filename = SPL_J742S2_SK_DTB;
+};
+
+&j784s4_evm_dtb {
+	filename = J742S2_SK_DTB;
+};
+
+&spl_j784s4_evm_dtb_unsigned {
+	filename = SPL_J742S2_SK_DTB;
+};
+
+&j784s4_evm_dtb_unsigned {
+	filename = J742S2_SK_DTB;
+};
+
+#endif

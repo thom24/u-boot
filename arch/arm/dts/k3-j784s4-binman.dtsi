@@ -5,7 +5,7 @@
 
 #include "k3-binman.dtsi"
 
-#ifdef CONFIG_TARGET_J784S4_R5_EVM
+#if defined(CONFIG_TARGET_J784S4_R5_EVM) || defined(CONFIG_TARGET_J742S2_R5_EVM)
 
 &rcfg_yaml_tifs {
 	config = "tifs-rm-cfg.yaml";
@@ -159,7 +159,7 @@
 };
 #endif
 
-#ifdef CONFIG_TARGET_J784S4_A72_EVM
+#if defined(CONFIG_TARGET_J784S4_A72_EVM) || defined(CONFIG_TARGET_J742S2_A72_EVM)
 
 #define SPL_J784S4_EVM_DTB "spl/dts/k3-j784s4-evm.dtb"
 #define J784S4_EVM_DTB "u-boot.dtb"

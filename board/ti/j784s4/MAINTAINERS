@@ -27,3 +27,7 @@ S:	Maintained
 F:	arch/arm/dts/k3-j742s2.dtsi
 F:	arch/arm/dts/k3-j742s2-main.dtsi
 F:	arch/arm/dts/k3-j742s2-evm.dts
+F:	arch/arm/dts/k3-j742s2-ddr.dtsi
+F:	arch/arm/dts/k3-j742s2-r5-evm.dts
+F:	arch/arm/dts/k3-j742s2-evm-u-boot.dtsi
+F:	arch/arm/dts/k3-j742s2-ddr-evm-lp4-4266.dtsi
