@@ -12,7 +12,7 @@
 };
 
 &binman {
-	tiboot3-j784s4-hs-evm.bin {
+	tiboot3_j784s4_hs: tiboot3-j784s4-hs-evm.bin {
 		filename = "tiboot3-j784s4-hs-evm.bin";
 
 		ti-secure-rom {
@@ -63,7 +63,7 @@
 };
 
 &binman {
-	tiboot3-j784s4-hs-fs-evm.bin {
+	tiboot3_j784s4_hs_fs: tiboot3-j784s4-hs-fs-evm.bin {
 		filename = "tiboot3-j784s4-hs-fs-evm.bin";
 
 		ti-secure-rom {
@@ -114,7 +114,7 @@
 };
 
 &binman {
-	tiboot3-j784s4-gp-evm.bin {
+	tiboot3_j784s4_gp: tiboot3-j784s4-gp-evm.bin {
 		filename = "tiboot3-j784s4-gp-evm.bin";
 		symlink = "tiboot3.bin";
 
@@ -168,7 +168,7 @@
 	ti-dm {
 		filename = "ti-dm.bin";
 
-		blob-ext {
+		j784s4_dm: blob-ext {
 			filename = "ti-dm/j784s4/ipc_echo_testb_mcu1_0_release_strip.xer5f";
 			optional;
 		};
