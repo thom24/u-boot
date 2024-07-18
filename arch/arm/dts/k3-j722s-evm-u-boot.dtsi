@@ -67,3 +67,9 @@
 &usb0_phy_ctrl {
 	bootph-pre-ram;
 };
+
+&ospi0 {
+	flash@0 {
+		cdns,phy-mode;
+	};
+};
