@@ -5,6 +5,7 @@
  */
 
 #include "k3-am62-lp-sk-binman.dtsi"
+#include "k3-am62-lp-sk-nand.dtsi"
 
 / {
 	chosen {

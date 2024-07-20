@@ -44,6 +44,13 @@
 			<&secure_proxy_main 23>;
 		bootph-pre-ram;
 	};
+
+	dummy_133mhz_clk: clock {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <133333333>;
+		bootph-pre-ram;
+	};
 };
 
 &dmsc {
@@ -92,4 +99,13 @@
 
 &main_bcdma {
 	ti,sci = <&dm_tifs>;
+};
+
+&gpmc0 {
+	clocks = <&dummy_133mhz_clk>;
+	/delete-property/ power-domains;
+};
+
+&elm0 {
+	/delete-property/ power-domains;
 };
