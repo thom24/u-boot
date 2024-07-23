@@ -252,3 +252,8 @@
 &mcu_fss0_ospi1_pins_default {
 	bootph-all;
 };
+
+/* Required for USB DFU Boot */
+&serdes3_usb_link {
+	bootph-all;
+};
