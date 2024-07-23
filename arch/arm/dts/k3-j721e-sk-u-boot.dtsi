@@ -111,8 +111,14 @@
 	bootph-all;
 };
 
+/* Required for USB DFU boot */
 &usb0 {
-	dr_mode = "host";
+	dr_mode = "peripheral";
+	bootph-all;
+};
+
+/* Required for USB DFU Boot */
+&serdes3_usb_link {
 	bootph-all;
 };
 
