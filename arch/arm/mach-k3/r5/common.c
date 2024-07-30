@@ -155,7 +155,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	/* Release all the exclusive devices held by SPL before starting ATF */
 	ti_sci->ops.dev_ops.release_exclusive_devices(ti_sci);
 
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 	if (board_is_resuming()) {
 		if (!valid_elf_image(LPM_DM_SAVE_ADDR))
 			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
@@ -188,7 +188,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 		goto start_arm64;
 	}
-#endif /* IS_ENABLED(CONFIG_SOC_K3_J721E) */
+#endif /* IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4) */
 
 	ret = rproc_init();
 	if (ret)
@@ -249,7 +249,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		loadaddr = fit_image_info[IMAGE_ID_DM_FW].image_start;
 		if (valid_elf_image(loadaddr)) {
 			loadaddr = load_elf_image_phdr(loadaddr);
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 			if (fit_image_info[IMAGE_ID_DM_FW].image_len > (BUFFER_ADDR - LPM_DM_SAVE_ADDR))
 				log_warning("%s\n: Not enough space to save DM-Firmware",
 					    __func__);
@@ -267,7 +267,7 @@ start_arm64:
 	/* Add an extra newline to differentiate the ATF logs from SPL */
 	printf("Starting ATF on ARM64 core...\n\n");
 
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 	if (!board_is_resuming()) {
 		ret = rproc_start(1);
 		if (ret)
