@@ -309,7 +309,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		panic("rproc failed to be initialized (%d)\n", ret);
 
 	if (board_is_resuming()) {
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 		if (!valid_elf_image(LPM_DM))
 			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
 			      __func__);
@@ -352,7 +352,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		fit_image_info[IMAGE_ID_ATF].image_start =
 			spl_image->entry_point;
 
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 	/* Save TF-A image, as at resume fit image is not processed */
 	memcpy((void *)LPM_BL31, (void *)fit_image_info[IMAGE_ID_ATF].image_start,
 	       fit_image_info[IMAGE_ID_ATF].image_len);
@@ -401,7 +401,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		loadaddr = fit_image_info[IMAGE_ID_DM_FW].image_start;
 		if (valid_elf_image(loadaddr)) {
 			loadaddr = load_elf_image_phdr(loadaddr);
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 			if (fit_image_info[IMAGE_ID_DM_FW].image_len > (BUFFER_ADDR - LPM_DM))
 				log_warning("%s\n: Not enough space to save DM-Firmware",
 					    __func__);
@@ -419,7 +419,7 @@ start_arm64:
 	/* Add an extra newline to differentiate the ATF logs from SPL */
 	printf("Starting ATF on ARM64 core...\n\n");
 
-#if IS_ENABLED(CONFIG_SOC_K3_J721E)
+#if IS_ENABLED(CONFIG_SOC_K3_J721E) || IS_ENABLED(CONFIG_SOC_K3_J784S4)
 	/*
 	 * Write a magic value in scratchpad ram to notify TF-A that the board
 	 * is resuming
