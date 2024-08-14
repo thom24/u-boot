@@ -1977,6 +1977,13 @@ ulong get_abootimg_addr(void);
  */
 void set_abootimg_addr(ulong addr);
 
+/*
+ * get_ainit_bootimg_addr() - Get Android init boot image address
+ *
+ * Return: Android init boot image address
+ */
+ulong get_ainit_bootimg_addr(void);
+
 /**
  * get_avendor_bootimg_addr() - Get Android vendor boot image address
  *
