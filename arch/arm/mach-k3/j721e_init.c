@@ -244,6 +244,9 @@ void do_dt_magic(void)
 __weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev) { }
 __weak int board_is_resuming(void) { return 0; }
 
+__weak void board_k3_ddrss_lpddr4_release_retention(void) { }
+__weak void k3_ddrss_lpddr4_change_freq(struct udevice *dev) { }
+__weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev) { }
 
 void board_init_f(ulong dummy)
 {
@@ -356,8 +359,19 @@ void board_init_f(ulong dummy)
 	if (ret)
 		panic("DRAM init failed: %d\n", ret);
 
-	if (board_is_resuming())
+	if (board_is_resuming()) {
+		/*
+		 * The DDR resume sequence is:
+		 * - exit DDR from retention
+		 * - de-assert the DDR_RET pin
+		 * - restore DDR max frequency
+		 * - exit DDR from low power
+		 */
 		k3_ddrss_lpddr4_exit_retention(dev);
+		board_k3_ddrss_lpddr4_release_retention();
+		k3_ddrss_lpddr4_change_freq(dev);
+		k3_ddrss_lpddr4_exit_low_power(dev);
+	}
 #endif
 	spl_enable_cache();
 

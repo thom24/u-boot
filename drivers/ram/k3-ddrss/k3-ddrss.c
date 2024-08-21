@@ -426,8 +426,6 @@ static int k3_ddrss_ofdata_to_priv(struct udevice *dev)
 
 #if defined(CONFIG_K3_J721E_DDRSS)
 
-void __weak board_k3_ddrss_lpddr4_release_retention(void) {}
-
 int __weak board_is_resuming(void)
 {
 	return 0;
@@ -521,7 +519,6 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 {
 	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
 	u32 regval;
-	unsigned long tmo;
 	volatile unsigned int val;
 
 	/* disable auto entry / exit */
@@ -638,7 +635,13 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	if ((val & 0x80000000) != 0x80000000)
 		val = *(volatile unsigned int *)PLL12_CTRL;
 
-	board_k3_ddrss_lpddr4_release_retention();
+}
+
+void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
+{
+	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
+	u32 regval;
+	unsigned long tmo;
 
 	/* LPC_SR_PHYMSTR_EN */
 	k3_ddrss_clr_ctl(ddrss, LPDDR4__LPC_SR_CTRLUPD_EN__REG, (0x1 << 16));
@@ -678,6 +681,13 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	debug("%s: Controller interrupt status: 0x%08x\n", __func__, regval);
 
 	debug("%s: Successfully exited Retention\n", __func__);
+}
+
+void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
+{
+	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
+	u32 regval;
+	unsigned long tmo;
 
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
 	debug("%s: LP State: 0x%08x\n", __func__, regval);
