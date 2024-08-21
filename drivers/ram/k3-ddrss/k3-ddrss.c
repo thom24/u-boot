@@ -431,8 +431,6 @@ int __weak board_is_resuming(void)
 	return 0;
 }
 
-#define PLL12_CTRL  0x0068C020
-
 #define k3_ddrss_readreg(k3_ddrss, block, shift, reg, pt) do {		\
 		u32 offset = 0U;					\
 		u32 result = 0U;					\
@@ -519,6 +517,7 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 {
 	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
 	u32 regval;
+	unsigned int pll_ctrl;
 	volatile unsigned int val;
 
 	/* disable auto entry / exit */
@@ -629,11 +628,20 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	regval |= (0x1 << 8);
 	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F2__REG, regval);
 
-	*(unsigned int *)PLL12_CTRL |= 0x80000000;
-	val = *(volatile unsigned int *)PLL12_CTRL;
+#define PLL_CTRL_OFF 0x20
+#define PLL_CFG 0x00680000
+	switch(ddrss->instance) {
+	case 0: pll_ctrl = PLL_CFG + 12 * 0x1000 + PLL_CTRL_OFF; break;
+	case 1: pll_ctrl = PLL_CFG + 26 * 0x1000 + PLL_CTRL_OFF; break;
+	case 2: pll_ctrl = PLL_CFG + 27 * 0x1000 + PLL_CTRL_OFF; break;
+	case 3: pll_ctrl = PLL_CFG + 28 * 0x1000 + PLL_CTRL_OFF; break;
+	}
 
-	if ((val & 0x80000000) != 0x80000000)
-		val = *(volatile unsigned int *)PLL12_CTRL;
+	*(unsigned int *)pll_ctrl |= 0x80000000;
+       val = *(volatile unsigned int *)pll_ctrl;
+
+       if ((val & 0x80000000) != 0x80000000)
+               val = *(volatile unsigned int *)pll_ctrl;
 
 }
 
