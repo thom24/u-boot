@@ -517,8 +517,9 @@ int __weak board_is_resuming(void)
 	k3_ddrss_writereg_phy(ddrss, reg, val);		\
 	} while (0)
 
-static void k3_ddrss_lpddr4_exit_retention(struct k3_ddrss_desc *ddrss)
+void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 {
+	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
 	u32 regval;
 	unsigned long tmo;
 	volatile unsigned int val;
@@ -1114,7 +1115,6 @@ static int k3_ddrss_probe(struct udevice *dev)
 
 #if defined(CONFIG_K3_J721E_DDRSS)
 	if (board_is_resuming()) {
-		k3_ddrss_lpddr4_exit_retention(ddrss);
 		return 0;
 	}
 #endif

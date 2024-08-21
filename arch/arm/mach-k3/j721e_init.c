@@ -241,6 +241,10 @@ void do_dt_magic(void)
 }
 #endif
 
+__weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev) { }
+__weak int board_is_resuming(void) { return 0; }
+
+
 void board_init_f(ulong dummy)
 {
 #if defined(CONFIG_K3_J721E_DDRSS) || defined(CONFIG_K3_LOAD_SYSFW)
@@ -351,6 +355,9 @@ void board_init_f(ulong dummy)
 	ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 	if (ret)
 		panic("DRAM init failed: %d\n", ret);
+
+	if (board_is_resuming())
+		k3_ddrss_lpddr4_exit_retention(dev);
 #endif
 	spl_enable_cache();
 
