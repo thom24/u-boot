@@ -655,14 +655,11 @@ void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
 	/* START=1 */
 	k3_ddrss_set_ctl(ddrss, LPDDR4__START__REG, 0x01);
 
-	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
 	k3_lpddr4_freq_update(ddrss);
-	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
 
 	tmo = timer_get_us() + 100000;
 	do {
 		k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INT_STATUS__REG, &regval);
-		debug("%s: DDRSS_PI_79 = %x\n", __func__, regval);
 		if (timer_get_us() > tmo) {
 			printf("%s:%d timeout error\n", __func__, __LINE__);
 			hang();
