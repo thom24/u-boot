@@ -526,7 +526,11 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	/* DFIBUS_FREQ_INIT = 2 */
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, &regval);
 	regval &= ~(0x3 << 24);
+#if __J7200__
 	regval |= (0x1 << 24);
+#else
+	regval |= (0x2 << 24);
+#endif
 	k3_ddrss_writereg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, regval);
 
 	/* Force Leveling during Initialization, Enable Link Training */
@@ -548,11 +552,19 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	/* PI_INIT_WORK_FREQ = 1 */
 	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, &regval);
 	regval &= ~0x1F;
+#if __J7200__
 	regval |= 0x01;
+#else
+	regval |= 0x02;
+#endif
 	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, regval);
 
 	/* PI_FREQ_MAP[2:0] */
+#if __J7200__
 	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x03);
+#else
+	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x07);
+#endif
 
 	/* Training/leveling configurations for different frequency set points */
 
