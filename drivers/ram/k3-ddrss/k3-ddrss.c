@@ -671,7 +671,6 @@ void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
 	k3_ddrss_set_ctl(ddrss, LPDDR4__START__REG, 0x01);
 
 	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
-	ddrss->ddr_fhs_cnt = 5;
 	k3_lpddr4_freq_update(ddrss);
 	debug("%s: PPL12 = %x\n", __func__, *(volatile unsigned int *)PLL12_CTRL);
 
