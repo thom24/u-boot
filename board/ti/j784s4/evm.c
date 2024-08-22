@@ -96,8 +96,10 @@ int board_late_init(void)
 int board_is_resuming(void)
 {
 	struct udevice *pmic;
-	int retval = 0;
 	int err;
+
+	if (gd_k3_resuming() >= 0)
+		goto end;
 
 	err = uclass_get_device_by_name(UCLASS_PMIC,
 					"pmic@48", &pmic);
@@ -109,31 +111,18 @@ int board_is_resuming(void)
 
 	if ((pmic_reg_read(pmic, SCRATCH_PAD_REG_3) == MAGIC_SUSPEND)) {
 		debug("%s: board is resuming\n", __func__);
-		retval = 1;
+		gd_set_k3_resuming(1);
+
+		/* clean magic suspend */
+		if (pmic_reg_write(pmic, SCRATCH_PAD_REG_3, 0))
+			printf("Failed to clean magic value for suspend detection in PMIC\n");
 	} else {
 		debug("%s: board is booting (no resume detected)\n", __func__);
+		gd_set_k3_resuming(0);
 	}
 end:
-	return retval;
+	return gd_k3_resuming();
 }
-
-void clean_suspend_flag(void)
-{
-	struct udevice *pmic;
-	int err;
-
-	err = uclass_get_device_by_name(UCLASS_PMIC,
-					"pmic@48", &pmic);
-	if (err) {
-		printf("Getting PMIC init failed: %d\n", err);
-		return;
-	}
-
-	/* clean magic suspend */
-	if (pmic_reg_write(pmic, SCRATCH_PAD_REG_3, 0))
-		printf("Failed to clean magic value for suspend detection in PMIC\n");
-}
-
 #endif /* CONFIG_SPL_BUILD && CONFIG_TARGET_J784s4_R5_EVM */
 
 void spl_board_init(void)

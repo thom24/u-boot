@@ -429,9 +429,6 @@ start_arm64:
 	else
 		*(u32 *)(SCRACTHPAD_RAM_BASE) = 0x00;
 #endif
-	/* clean the suspend flag from the PMIC */
-	clean_suspend_flag();
-
 	ret = rproc_start(1);
 	if (ret)
 		panic("%s: ATF failed to start on rproc (%d)\n", __func__, ret);

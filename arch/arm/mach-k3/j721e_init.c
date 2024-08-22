@@ -291,6 +291,10 @@ void board_init_f(ulong dummy)
 	struct udevice *dev;
 	int ret;
 #endif
+
+	/* init resume flag */
+	gd_set_k3_resuming(-1);
+
 	/*
 	 * Cannot delay this further as there is a chance that
 	 * K3_BOOT_PARAM_TABLE_INDEX can be over written by SPL MALLOC section.
