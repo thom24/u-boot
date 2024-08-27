@@ -5,13 +5,6 @@
 
 #include "k3-j784s4-evm-u-boot.dtsi"
 
-&sms {
-	k3_sysreset: sysreset-controller {
-		compatible = "ti,sci-sysreset";
-		bootph-pre-ram;
-	};
-};
-
 #ifdef CONFIG_TARGET_J742S2_R5_EVM
 
 &ti_fs_enc {
