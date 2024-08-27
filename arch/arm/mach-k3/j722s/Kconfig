@@ -13,6 +13,7 @@ config TARGET_J722S_A53_EVM
 	bool "TI K3 based J722S EVM running on A53"
 	select ARM64
 	select BINMAN
+	select OF_SYSTEM_SETUP
 
 config TARGET_J722S_R5_EVM
 	bool "TI K3 based J722S EVM running on R5"
