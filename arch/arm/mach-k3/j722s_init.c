@@ -66,7 +66,7 @@ static void ctrl_mmr_unlock(void)
 	mmr_unlock(PADCFG_MMR1_BASE, 1);
 }
 
-void board_init_f(ulong dummy)
+static void k3_spl_init(void)
 {
 	struct udevice *dev;
 	int ret;
@@ -139,21 +139,31 @@ void board_init_f(ulong dummy)
 
 	preloader_console_init();
 
-	/* Output System Firmware version info */
-	k3_sysfw_print_ver();
-
 	if (IS_ENABLED(CONFIG_CPU_V7R)) {
 		/* Disable ROM configured firewalls right after loading sysfw */
 		remove_fwl_configs(cbass_main_fwls, ARRAY_SIZE(cbass_main_fwls));
 	}
+
+	/* Output System Firmware version info */
+	k3_sysfw_print_ver();
+}
+
+static void k3_mem_init(void)
+{
+	struct udevice *dev;
+	int ret;
 
 	if (IS_ENABLED(CONFIG_K3_AM62A_DDRSS)) {
 		ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 		if (ret)
 			panic("DRAM init failed: %d\n", ret);
 	}
+}
 
-	debug("j722s_init: %s done\n", __func__);
+void board_init_f(ulong dummy)
+{
+	k3_spl_init();
+	k3_mem_init();
 }
 
 static u32 __get_backup_bootmedia(u32 devstat)
