@@ -74,7 +74,8 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
 	} else {
 		fixup_memory_node(spl_image);
 	}
-	detect_enable_spinand(spl_image->fdt_addr);
+	if (spl_image->fdt_addr)
+		detect_enable_spinand(spl_image->fdt_addr);
 }
 #endif
 
