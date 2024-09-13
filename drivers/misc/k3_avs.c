@@ -226,6 +226,7 @@ const struct soc_attr vtm_soc_list[] = {
 	{ .family = "J7200", .data = (void *)&j721e_vd_config },
 	{ .family = "J721S2", .data = (void *)&j721s2_vd_config },
 	{ .family = "J784S4", .data = (void *)&j721s2_vd_config },
+	{ .family = "J742S2", .data = (void *)&j721s2_vd_config },
 	{}
 };
 
