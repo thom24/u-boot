@@ -30,7 +30,7 @@
 		ranges = <0x00 0x00 0x70000000 0x800000>;
 
 		atf-sram@0 {
-			reg = <0x00 0x20000>;
+			reg = <0x00 0x30000>;
 		};
 
 		tifs-sram@1f0000 {
