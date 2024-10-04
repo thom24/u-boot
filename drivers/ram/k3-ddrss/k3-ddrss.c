@@ -521,7 +521,7 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	volatile unsigned int val;
 
 	/* disable auto entry / exit */
-	k3_ddrss_clr_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, (0xF << 24) | (0xF << 16));
+	k3_ddrss_clr_ctl(ddrss, DENALI_CTL_141, (0xF << 24) | (0xF << 16));
 
 	/* Configure DFI Interface, DDR retention exit occurs through PHY */
 	k3_ddrss_readreg_phy(ddrss, LPDDR4__PHY_SET_DFI_INPUT_0__REG, &regval);
