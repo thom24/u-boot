@@ -567,8 +567,6 @@ void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
 	u32 regval;
 	unsigned long tmo;
 
-	/* LPC_SR_PHYMSTR_EN */
-	k3_ddrss_clr_ctl(ddrss, LPDDR4__LPC_SR_CTRLUPD_EN__REG, (0x1 << 16));
 	/* PI_START=1 */
 	k3_ddrss_set_pi(ddrss, LPDDR4__PI_START__REG, 0x01);
 	/* START=1 */
@@ -612,6 +610,7 @@ void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
 	debug("%s: LP State: 0x%08x\n", __func__, regval);
 
+	/* make sure that LP flag is clear before going through this process */
 	k3_ddrss_writereg_ctl(ddrss, LPDDR4__INT_ACK_0__REG, (0x1 << 10));
 
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__CKSRX_F1__REG, &regval);
