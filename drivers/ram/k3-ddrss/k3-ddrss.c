@@ -535,110 +535,29 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	/* PI_PWRUP_SREFRESH_EXIT = 0 */
 	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_PWRUP_SREFRESH_EXIT__REG, 0x1 << 16);
 
-	/* DFIBUS_BOOT_FREQ = 0 */
-	k3_ddrss_clr_ctl(ddrss, LPDDR4__DFIBUS_BOOT_FREQ__REG, 0x3);
-
-	/* DFIBUS_FREQ_INIT = 2 */
-	k3_ddrss_readreg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, &regval);
-	regval &= ~(0x3 << 24);
-#if __J7200__
-	regval |= (0x1 << 24);
-#else
-	regval |= (0x2 << 24);
-#endif
-	k3_ddrss_writereg_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, regval);
-
-	/* Force Leveling during Initialization, Enable Link Training */
-
-	/* PI_INIT_LVL_EN = 1 */
-	k3_ddrss_set_pi(ddrss, LPDDR4__PI_NORMAL_LVL_SEQ__REG, (1 << 8));
-
 	/* PI_DRAM_INIT_EN = 0 */
-	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_DLL_RST__REG, (0x1 << 8));
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_DRAM_INIT_EN__REG, 0x1 << 8);
 
 	/* PI_DFI_PHYMSTR_STATE_SEL_R = 1  (force memory into self-refresh) */
 	k3_ddrss_set_pi(ddrss, LPDDR4__PI_DFI_PHYMSTR_STATE_SEL_R__REG, (1 << 24));
 
 	/*  PHY_INDEP_INIT_MODE = 0 */
-	k3_ddrss_clr_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, (0x1 << 16));
+	k3_ddrss_clr_ctl(ddrss, LPDDR4__PHY_INDEP_INIT_MODE__REG, (0x1 << 16));
+
 	/* PHY_INDEP_TRAIN_MODE = 1 */
 	k3_ddrss_set_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, 0x1);
 
-	/* PI_INIT_WORK_FREQ = 1 */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, &regval);
-	regval &= ~0x1F;
-#if __J7200__
-	regval |= 0x01;
-#else
-	regval |= 0x02;
-#endif
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_INIT_WORK_FREQ__REG, regval);
+	/* clear periodic WDQLVL for F0 */
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F0__REG,
+			0x2 << LPDDR4__DENALI_PI_212__PI_WDQLVL_EN_F0_SHIFT);
 
-	/* PI_FREQ_MAP[2:0] */
-#if __J7200__
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x03);
-#else
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, 0x07);
-#endif
+	/* clear periodic WDQLVL for F1 */
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F1__REG,
+			0x2 << LPDDR4__DENALI_PI_214__PI_WDQLVL_EN_F1_SHIFT);
 
-	/* Training/leveling configurations for different frequency set points */
-
-	/* PI_CALVL_EN_F0 = 01b; PI_CALVL_EN_F1 = 01b; PI_CALVL_EN_F2 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_CALVL_EN_F0__REG, &regval);
-	regval &= ~0x030303;
-	regval |= 0x010101;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_CALVL_EN_F0__REG, regval);
-
-	/* PI_WRLVL_EN_F0 = 00b; PI_WRLVL_EN_F1 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_TDFI_CTRL_DELAY_F1__REG, &regval);
-	regval &= ~0x03030000;
-	regval |= 0x01000000;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_TDFI_CTRL_DELAY_F1__REG, regval);
-
-	/* PI_WRLVL_EN_F2 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WRLVL_EN_F2__REG, &regval);
-	regval &= ~0x03;
-	regval |= 0x01;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WRLVL_EN_F2__REG, regval);
-
-	/* PI_RDLVL_EN_F0 = 00b; PI_RDLVL_EN_F1 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, &regval);
-	regval &= ~0x030003;
-	regval |= 0x010000;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, regval);
-
-	/* PI_RDLVL_EN_F2 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, &regval);
-	regval &= ~0x03;
-	regval |= 0x01;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, regval);
-
-	/* PI_RDLVL_GATE_EN_F0 = 00b; PI_RDLVL_GATE_EN_F1 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, &regval);
-	regval &= ~0x03000300;
-	regval |= 0x01000000;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F0__REG, regval);
-
-	/* PI_RDLVL_GATE_EN_F2 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, &regval);
-	regval &= ~0x0300;
-	regval |= 0x0100;
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_RDLVL_EN_F2__REG, regval);
-
-	/* PI_WDQLVL_EN_F0 = 00b */
-	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F0__REG, (0x3 << 8));
-
-	/* PI_WDQLVL_EN_F1 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F1__REG, &regval);
-	regval &= ~(0x3 << 24);
-	regval |= (0x1 << 24);
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F1__REG, regval);
-
-	/* PI_WDQLVL_EN_F2 = 01b */
-	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F2__REG, &regval);
-	regval &= ~(0x3 << 8);
-	regval |= (0x1 << 8);
-	k3_ddrss_writereg_pi(ddrss, LPDDR4__PI_WDQLVL_VREF_DELTA_F2__REG, regval);
+	/* clear periodic WDQLVL for F2 */
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F2__REG,
+			0x2 << LPDDR4__DENALI_PI_217__PI_WDQLVL_EN_F2_SHIFT);
 
 #define PLL_CTRL_OFF 0x20
 #define PLL_CFG 0x00680000
