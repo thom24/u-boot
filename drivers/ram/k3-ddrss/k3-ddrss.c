@@ -518,7 +518,7 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	k3_ddrss_set_ctl(ddrss, LPDDR4__PWRUP_SREFRESH_EXIT__REG, 0x1);
 
 	/* PI_PWRUP_SREFRESH_EXIT = 0 */
-	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_COL_DIFF__REG, 0x1 << 16);
+	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_PWRUP_SREFRESH_EXIT__REG, 0x1 << 16);
 
 	/* DFIBUS_BOOT_FREQ = 0 */
 	k3_ddrss_clr_ctl(ddrss, LPDDR4__DFIBUS_BOOT_FREQ__REG, 0x3);
