@@ -292,8 +292,6 @@ __weak int board_is_resuming(void)
 	return 0;
 }
 
-__weak void clean_suspend_flag(void) { }
-
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
