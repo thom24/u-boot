@@ -604,7 +604,7 @@ void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
 void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
 {
 	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
-	u32 regval;
+	u32 regval, fspop, fspwr;
 	unsigned long tmo;
 
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
@@ -651,6 +651,28 @@ void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
 
 	k3_ddrss_readreg_ctl(ddrss, LPDDR4__LP_STATE_CS0__REG, &regval);
 	debug("%s: LP State: 0x%08x\n", __func__, regval);
+
+	/*
+	 * MR13 data within the PI is based upon CS but NOT based upon
+	 * frequency set point.
+	 * MR13 is the current MR13 value
+	 */
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_MR13_DATA_0__REG, &regval);
+	fspop = (regval & ((u32)1 << 31)) >> 31;
+	fspwr = (regval & ((u32)1 << 30)) >> 30;
+
+	k3_ddrss_set_ctl(ddrss, LPDDR4__FSP_OP_CURRENT__REG,
+			 fspop << LPDDR4__DENALI_CTL_192__FSP_OP_CURRENT_SHIFT);
+
+	k3_ddrss_set_ctl(ddrss, LPDDR4__FSP_WR_CURRENT__REG,
+			 fspwr << LPDDR4__DENALI_CTL_192__FSP_WR_CURRENT_SHIFT);
+
+	// do not allow CTL to update MR
+	k3_ddrss_set_ctl(ddrss, LPDDR4__FSP_PHY_UPDATE_MRW__REG,
+			 1 << LPDDR4__DENALI_CTL_191__FSP_PHY_UPDATE_MRW_SHIFT);
+
+	// do not allow PI to update MR
+	k3_ddrss_clr_pi(ddrss, DENALI_PI_64, 1 << 0);
 }
 #endif /* CONFIG_K3_J721E_DDRSS */
 
