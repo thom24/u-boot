@@ -688,6 +688,23 @@ void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
 
 	// do not allow PI to update MR
 	k3_ddrss_clr_pi(ddrss, DENALI_PI_64, 1 << 0);
+
+	// PI_FREQ_MAP defines supported working frequencies
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_FREQ_MAP__REG, &regval);
+        if (regval & (0x1 << 1)) {
+		// define FSP0 and FSP1 as trained
+		k3_ddrss_set_ctl(ddrss, LPDDR4__MR_FSP_DATA_VALID_F0__REG,
+				 LPDDR4__DENALI_CTL_190__MR_FSP_DATA_VALID_F0_MASK);
+		k3_ddrss_set_ctl(ddrss, LPDDR4__MR_FSP_DATA_VALID_F1__REG,
+				 LPDDR4__DENALI_CTL_190__MR_FSP_DATA_VALID_F1_MASK);
+        }
+        if (regval & (0x1 << 2)) {
+		// define FSP0 and FSP2 as trained
+		k3_ddrss_set_ctl(ddrss, LPDDR4__MR_FSP_DATA_VALID_F0__REG,
+				 LPDDR4__DENALI_CTL_190__MR_FSP_DATA_VALID_F0_MASK);
+		k3_ddrss_set_ctl(ddrss, LPDDR4__MR_FSP_DATA_VALID_F2__REG,
+				 LPDDR4__DENALI_CTL_190__MR_FSP_DATA_VALID_F2_MASK);
+        }
 }
 #endif /* CONFIG_K3_J721E_DDRSS */
 
