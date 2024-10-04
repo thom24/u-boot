@@ -557,7 +557,7 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_DLL_RST__REG, (0x1 << 8));
 
 	/* PI_DFI_PHYMSTR_STATE_SEL_R = 1  (force memory into self-refresh) */
-	k3_ddrss_set_pi(ddrss, LPDDR4__PI_DFI_VERSION__REG, (1 << 24));
+	k3_ddrss_set_pi(ddrss, LPDDR4__PI_DFI_PHYMSTR_STATE_SEL_R__REG, (1 << 24));
 
 	/*  PHY_INDEP_INIT_MODE = 0 */
 	k3_ddrss_clr_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, (0x1 << 16));
