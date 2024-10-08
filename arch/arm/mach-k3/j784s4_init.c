@@ -20,6 +20,7 @@
 #include <mmc.h>
 #include <remoteproc.h>
 #include <power/pmic.h>
+#include <mach/k3-ddrss.h>
 
 #define J784S4_MAX_DDR_CONTROLLERS	4
 
@@ -205,11 +206,13 @@ void k3_spl_init(void)
 	k3_sysfw_print_ver();
 }
 
-__weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev) { }
+__weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev,
+					   struct k3_ddrss_regs* regs) { }
 __weak int board_is_resuming(void) { return 0; }
 
 __weak void k3_ddrss_lpddr4_change_freq(struct udevice *dev) { }
-__weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev) { }
+__weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev,
+					   struct k3_ddrss_regs* regs) { }
 
 #define DDR_RET_VAL BIT(5)
 #define GPIO_OUT_1 0x3D
@@ -241,6 +244,7 @@ void k3_mem_init(void)
 
 	if (IS_ENABLED(CONFIG_K3_J721E_DDRSS)) {
 		struct udevice *devs[J784S4_MAX_DDR_CONTROLLERS];
+		struct k3_ddrss_regs regs[J784S4_MAX_DDR_CONTROLLERS];
 
 		ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 		if (ret)
@@ -263,7 +267,8 @@ void k3_mem_init(void)
 		if (board_is_resuming()) {
 			/* exit DDRs from retention */
 			for (ctrl = 0; ctrl < J784S4_MAX_DDR_CONTROLLERS; ctrl++) {
-				k3_ddrss_lpddr4_exit_retention(devs[ctrl]);
+				k3_ddrss_lpddr4_exit_retention(devs[ctrl],
+							       &regs[ctrl]);
 			}
 
 			/* de-assert DDR_RET pin */
@@ -276,7 +281,8 @@ void k3_mem_init(void)
 
 			/* exit DDR from low power */
 			for (ctrl = 0; ctrl < J784S4_MAX_DDR_CONTROLLERS; ctrl++) {
-				k3_ddrss_lpddr4_exit_low_power(devs[ctrl]);
+				k3_ddrss_lpddr4_exit_low_power(devs[ctrl],
+							       &regs[ctrl]);
 			}
 		}
 		printf("Initialized %d DRAM controllers\n", ctrl);

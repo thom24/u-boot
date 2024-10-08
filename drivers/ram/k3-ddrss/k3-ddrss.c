@@ -20,6 +20,7 @@
 #include <power-domain.h>
 #include <wait_bit.h>
 #include <power/regulator.h>
+#include <mach/k3-ddrss.h>
 
 #include "lpddr4_obj_if.h"
 #include "lpddr4_if.h"
@@ -513,12 +514,24 @@ int __weak board_is_resuming(void)
 	k3_ddrss_writereg_phy(ddrss, reg, val);		\
 	} while (0)
 
-void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
+void k3_ddrss_lpddr4_exit_retention(struct udevice *dev,
+				    struct k3_ddrss_regs* regs)
 {
 	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
 	u32 regval;
 	unsigned int pll_ctrl;
 	volatile unsigned int val;
+
+	/*
+	 * Saving registers
+	 */
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_141, &regs->ctl_141);
+	k3_ddrss_readreg_phy(ddrss, DENALI_PHY_1305, &regs->phy_1305);
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_88, &regs->ctl_88);
+	k3_ddrss_readreg_pi(ddrss, DENALI_PI_134, &regs->pi_134);
+	// PI_139 cannot be restored
+	k3_ddrss_readreg_pi(ddrss, DENALI_PI_7, &regs->pi_7);
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_20, &regs->ctl_20);
 
 	/* disable auto entry / exit */
 	k3_ddrss_clr_ctl(ddrss, DENALI_CTL_141, (0xF << 24) | (0xF << 16));
@@ -546,6 +559,12 @@ void k3_ddrss_lpddr4_exit_retention(struct udevice *dev)
 
 	/* PHY_INDEP_TRAIN_MODE = 1 */
 	k3_ddrss_set_ctl(ddrss, LPDDR4__PHY_INDEP_TRAIN_MODE__REG, 0x1);
+
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F1__REG, &regs->wdqlvl_f1);
+	regs->wdqlvl_f1 &= LPDDR4__DENALI_PI_214__PI_WDQLVL_EN_F1_MASK;
+
+	k3_ddrss_readreg_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F2__REG, &regs->wdqlvl_f2);
+	regs->wdqlvl_f2 &= LPDDR4__DENALI_PI_217__PI_WDQLVL_EN_F2_MASK;
 
 	/* clear periodic WDQLVL for F0 */
 	k3_ddrss_clr_pi(ddrss, LPDDR4__PI_WDQLVL_EN_F0__REG,
@@ -616,7 +635,8 @@ void k3_ddrss_lpddr4_change_freq(struct udevice *dev)
 	debug("%s: Successfully exited Retention\n", __func__);
 }
 
-void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
+void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev,
+				    struct k3_ddrss_regs* regs)
 {
 	struct k3_ddrss_desc *ddrss = dev_get_priv(dev);
 	u32 regval, fspop, fspwr;
@@ -705,6 +725,35 @@ void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev)
 		k3_ddrss_set_ctl(ddrss, LPDDR4__MR_FSP_DATA_VALID_F2__REG,
 				 LPDDR4__DENALI_CTL_190__MR_FSP_DATA_VALID_F2_MASK);
         }
+
+	/*
+	 * Restore registers
+	 */
+	k3_ddrss_writereg_ctl(ddrss, DENALI_CTL_141, regs->ctl_141);
+	k3_ddrss_writereg_phy(ddrss, DENALI_PHY_1305, regs->phy_1305);
+	k3_ddrss_writereg_ctl(ddrss, DENALI_CTL_88, regs->ctl_88);
+	k3_ddrss_writereg_pi(ddrss, DENALI_PI_134, regs->pi_134);
+	// PI_139 cannot be restored
+	k3_ddrss_writereg_pi(ddrss, DENALI_PI_7, regs->pi_7);
+	k3_ddrss_writereg_ctl(ddrss, DENALI_CTL_20, regs->ctl_20);
+
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_141, &regs->ctl_141);
+	k3_ddrss_readreg_phy(ddrss, DENALI_PHY_1305, &regs->phy_1305);
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_88, &regs->ctl_88);
+	// PI_139 cannot be restored
+	k3_ddrss_readreg_pi(ddrss, DENALI_PI_7, &regs->pi_7);
+
+	k3_ddrss_readreg_pi(ddrss, DENALI_PI_79, &regval);
+	k3_ddrss_writereg_pi(ddrss, DENALI_PI_80, regval);
+
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_293, &regval);
+	k3_ddrss_writereg_ctl(ddrss, DENALI_CTL_295, regval);
+
+	k3_ddrss_readreg_ctl(ddrss, DENALI_CTL_294, &regval);
+	k3_ddrss_writereg_ctl(ddrss, DENALI_CTL_296, regval);
+
+	k3_ddrss_set_pi(ddrss, DENALI_PI_214, regs->wdqlvl_f1);
+	k3_ddrss_set_pi(ddrss, DENALI_PI_217, regs->wdqlvl_f2);
 }
 #endif /* CONFIG_K3_J721E_DDRSS */
 
