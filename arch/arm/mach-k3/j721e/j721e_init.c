@@ -23,6 +23,7 @@
 #include "../sysfw-loader.h"
 #include "../common.h"
 #include <power/pmic.h>
+#include <mach/k3-ddrss.h>
 
 /* NAVSS North Bridge (NB) registers */
 #define NAVSS0_NBSS_NB0_CFG_MMRS		0x03802000
@@ -216,11 +217,13 @@ void do_dt_magic(void)
 }
 #endif
 
-__weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev) { }
+__weak void k3_ddrss_lpddr4_exit_retention(struct udevice *dev,
+					   struct k3_ddrss_regs* regs) { }
 __weak int board_is_resuming(void) { return 0; }
 
 __weak void k3_ddrss_lpddr4_change_freq(struct udevice *dev) { }
-__weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev) { }
+__weak void k3_ddrss_lpddr4_exit_low_power(struct udevice *dev,
+					   struct k3_ddrss_regs* regs) { }
 
 #define GPIO_OUT_1 0x3D
 #define DDR_RET_VAL BIT(1)
@@ -262,6 +265,7 @@ static void k3_deassert_DDR_RET(void)
 void board_init_f(ulong dummy)
 {
 #if defined(CONFIG_K3_J721E_DDRSS) || defined(CONFIG_K3_LOAD_SYSFW)
+	struct k3_ddrss_regs regs;
 	struct udevice *dev;
 	int ret;
 #endif
@@ -366,10 +370,10 @@ void board_init_f(ulong dummy)
 		 * - restore DDR max frequency
 		 * - exit DDR from low power
 		 */
-		k3_ddrss_lpddr4_exit_retention(dev);
+		k3_ddrss_lpddr4_exit_retention(dev, &regs);
 		k3_deassert_DDR_RET();
 		k3_ddrss_lpddr4_change_freq(dev);
-		k3_ddrss_lpddr4_exit_low_power(dev);
+		k3_ddrss_lpddr4_exit_low_power(dev, &regs);
 	}
 #endif
 	spl_enable_cache();
