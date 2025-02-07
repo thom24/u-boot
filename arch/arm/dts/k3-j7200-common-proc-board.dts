@@ -264,7 +264,7 @@
 
 &wkup_uart0 {
 	/* Wakeup UART is used by System firmware */
-	status = "reserved";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&wkup_uart0_pins_default>;
 };
