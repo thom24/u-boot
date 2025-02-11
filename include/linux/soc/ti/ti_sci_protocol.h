@@ -595,6 +595,20 @@ struct ti_sci_fwl_ops {
 };
 
 /**
+ * struct ti_sci_lpm_ops - Low Power Mode specific operations
+ * @decrypt_tfa: Request for decrypting TFA at specific address.
+ * @core_resume: Request for resuming TFA once decrypted.
+ * @min_context_restore: Request for restoring TIFS context (and firewalls)
+ */
+struct ti_sci_lpm_ops {
+	int (*decrypt_tfa)(const struct ti_sci_handle *handle,
+			   u64 encrypted_address, u64 unencrypted_address);
+	int (*core_resume)(const struct ti_sci_handle *handle);
+	int (*min_context_restore)(const struct ti_sci_handle *handle,
+				   uint64_t context_addr);
+};
+
+/**
  * struct ti_sci_ops - Function support for TI SCI
  * @board_ops:	Miscellaneous operations
  * @dev_ops:	Device specific operations
@@ -615,6 +629,7 @@ struct ti_sci_ops {
 	struct ti_sci_rm_psil_ops rm_psil_ops;
 	struct ti_sci_rm_udmap_ops rm_udmap_ops;
 	struct ti_sci_fwl_ops fwl_ops;
+	struct ti_sci_lpm_ops lpm_ops;
 };
 
 /**
