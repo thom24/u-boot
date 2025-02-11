@@ -1581,7 +1581,7 @@ struct ti_sci_msg_core_resume_resp {
 struct ti_sci_msg_min_context_restore_req {
 	struct ti_sci_msg_hdr	hdr;
 	uint32_t		ctx_lo;
-	uint32_t		ctx_hi
+	uint32_t		ctx_hi;
 } __packed;
 
 /**
