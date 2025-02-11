@@ -46,18 +46,16 @@
 /* Starting buffer address is 1MB before the stack address in DDR */
 #define BUFFER_ADDR (CONFIG_SPL_STACK_R_ADDR - SZ_1M)
 
-/* This is actually the whole size of the SRAM */
-#define BL31_SIZE    0x20000
-
 /* This address belongs to a reserved memory region for the point of view of
  * Linux, U-boot SPL must use the same address to restore TF-A and resume
  * entry point address
  */
-#define LPM_SAVE		0xA5000000
-#define LPM_BL31		LPM_SAVE
-#define LPM_BL31_START		LPM_BL31 + BL31_SIZE
-#define LPM_BL31_SIZE		LPM_BL31_START + 4
-#define LPM_DM			LPM_BL31_SIZE  + 4
+#define LPM_ENCRYPTED_SAVE_ADDR		0xA5000000U
+#define LPM_ENCRYPTED_MAX_SZ		0x00030000
+#define LPM_DDR_SAVE_TIFS_CONTEXT	(LPM_ENCRYPTED_SAVE_ADDR + LPM_ENCRYPTED_MAX_SZ)
+#define LPM_DDR_TIFS_CONTEXT_SZ		0x00010000
+#define LPM_DM_SAVE_ADDR		(LPM_DDR_SAVE_TIFS_CONTEXT + LPM_DDR_TIFS_CONTEXT_SZ)
+#define LPM_DECRYPTED_TFA_ADDR		0x70000000UL // TODO: we should get this from the DTB
 
 /* Check if the copy of TF-A and DM-Firmware in DRAM does not overlap an
  * over memory section.
@@ -66,7 +64,7 @@
  * save it.
  */
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_TARGET_J7200_R5_EVM)
-#if ((LPM_DM + SZ_512K) > BUFFER_ADDR)
+#if ((LPM_DM_SAVE_ADDR + SZ_512K) > BUFFER_ADDR)
 #error Not enough space to save DM-Firmware and TF-A for S2R
 #endif
 #endif
