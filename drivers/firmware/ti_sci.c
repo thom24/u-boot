@@ -2610,6 +2610,135 @@ static int ti_sci_cmd_change_fwl_owner(const struct ti_sci_handle *handle,
 	return ret;
 }
 
+/**
+ * ti_sci_cmd_decrypt_tfa() - Request for decrypting TFA at specific address.
+ * @handle:    pointer to TI SCI handle
+ * @unencrypted_address: Address where the unencrypted TFA will be restored
+ * @encrypted_address:	Address where the TFA lies unencrypted
+ *
+ * Return: 0 if all went well, else returns appropriate error value.
+ */
+static int ti_sci_cmd_decrypt_tfa(const struct ti_sci_handle *handle,
+				  uint64_t unencrypted_address,
+				  uint64_t encrypted_address)
+{
+	struct ti_sci_msg_decrypt_tfa_req req;
+	struct ti_sci_msg_decrypt_tfa_resp *resp;
+	struct ti_sci_info *info;
+	struct ti_sci_xfer *xfer;
+	int ret = 0;
+
+	if (IS_ERR(handle))
+		return PTR_ERR(handle);
+	if (!handle)
+		return -EINVAL;
+
+	info = handle_to_ti_sci_info(handle);
+
+	xfer = ti_sci_setup_one_xfer(info, TISCI_MSG_LPM_DECRYPT,
+				     TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
+				     (u32 *)&req, sizeof(req), sizeof(*resp));
+	if (IS_ERR(xfer)) {
+		ret = PTR_ERR(xfer);
+		return ret;
+	}
+
+	req.encrypted_address = encrypted_address;
+	req.unencrypted_address = unencrypted_address;
+
+	ret = ti_sci_do_xfer(info, xfer);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+/**
+ * ti_sci_cmd_core_resume() - Request for resuming TFA.
+ *
+ * The TIFS will launch the TFA from the entrypoint saved via the ENTER_SLEEP
+ * message.
+ *
+ * @handle:    pointer to TI SCI handle
+ *
+ * Return: 0 if all went well, else returns appropriate error value.
+ */
+static int ti_sci_cmd_core_resume(const struct ti_sci_handle *handle)
+{
+	struct ti_sci_msg_core_resume_req req;
+	struct ti_sci_msg_core_resume_resp *resp;
+	struct ti_sci_info *info;
+	struct ti_sci_xfer *xfer;
+	int ret = 0;
+
+	if (IS_ERR(handle))
+		return PTR_ERR(handle);
+	if (!handle)
+		return -EINVAL;
+
+	info = handle_to_ti_sci_info(handle);
+
+	xfer = ti_sci_setup_one_xfer(info, TISCI_MSG_CORE_RESUME,
+				     TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
+				     (u32 *)&req, sizeof(req), sizeof(*resp));
+	if (IS_ERR(xfer)) {
+		ret = PTR_ERR(xfer);
+		return ret;
+	}
+
+	ret = ti_sci_do_xfer(info, xfer);
+
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+/**
+ * ti_sci_cmd_min_context_restore() - Request for restoring TIFS context.
+ *
+ * By restoring its context, TIFS will restore its firewall.
+ *
+ * @handle:    pointer to TI SCI handle
+ * @context_addr: address from where to restore the context
+ *
+ * Return: 0 if all went well, else returns appropriate error value.
+ */
+static int ti_sci_cmd_min_context_restore(const struct ti_sci_handle *handle,
+					  uint64_t context_addr)
+{
+	struct ti_sci_msg_min_context_restore_req req;
+	struct ti_sci_msg_min_context_restore_resp *resp;
+	struct ti_sci_info *info;
+	struct ti_sci_xfer *xfer;
+	int ret = 0;
+
+	if (IS_ERR(handle))
+		return PTR_ERR(handle);
+	if (!handle)
+		return -EINVAL;
+
+	info = handle_to_ti_sci_info(handle);
+
+	xfer = ti_sci_setup_one_xfer(info, TISCI_MSG_MIN_CONTEXT_RESTORE,
+				     TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
+				     (u32 *)&req, sizeof(req), sizeof(*resp));
+	if (IS_ERR(xfer)) {
+		ret = PTR_ERR(xfer);
+		return ret;
+	}
+
+	req.ctx_hi = (uint32_t)(context_addr >> 32);
+	req.ctx_lo = (uint32_t)(context_addr & 0xFFFFFFFFULL);
+
+	ret = ti_sci_do_xfer(info, xfer);
+
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 /*
  * ti_sci_setup_ops() - Setup the operations structures
  * @info:	pointer to TISCI pointer
@@ -2627,6 +2756,7 @@ static void ti_sci_setup_ops(struct ti_sci_info *info)
 	struct ti_sci_rm_psil_ops *psilops = &ops->rm_psil_ops;
 	struct ti_sci_rm_udmap_ops *udmap_ops = &ops->rm_udmap_ops;
 	struct ti_sci_fwl_ops *fwl_ops = &ops->fwl_ops;
+	struct ti_sci_lpm_ops *lpm_ops = &ops->lpm_ops;
 
 	bops->board_config = ti_sci_cmd_set_board_config;
 	bops->board_config_rm = ti_sci_cmd_set_board_config_rm;
@@ -2691,6 +2821,10 @@ static void ti_sci_setup_ops(struct ti_sci_info *info)
 	fwl_ops->set_fwl_region = ti_sci_cmd_set_fwl_region;
 	fwl_ops->get_fwl_region = ti_sci_cmd_get_fwl_region;
 	fwl_ops->change_fwl_owner = ti_sci_cmd_change_fwl_owner;
+
+	lpm_ops->decrypt_tfa = ti_sci_cmd_decrypt_tfa;
+	lpm_ops->core_resume = ti_sci_cmd_core_resume;
+	lpm_ops->min_context_restore = ti_sci_cmd_min_context_restore;
 }
 
 /**

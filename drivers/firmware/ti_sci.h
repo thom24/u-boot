@@ -80,6 +80,23 @@
 #define TISCI_MSG_FWL_GET		0x9001
 #define TISCI_MSG_FWL_CHANGE_OWNER	0x9002
 
+/* LPM requests */
+#define TISCI_MSG_SYNC_RESUME                   (0x0302U)
+#define TISCI_MSG_CONTINUE_RESUME               (0x0303U)
+#define TISCI_MSG_CORE_RESUME                   (0x0304U)
+#define TISCI_MSG_ABORT_ENTER_SLEEP             (0x0305U)
+#define TISCI_MSG_LPM_WAKE_REASON               (0x0306U)
+#define TISCI_MSG_SET_IO_ISOLATION              (0x0307U)
+#define TISCI_MSG_MIN_CONTEXT_RESTORE           (0x0308U)
+#define TISCI_MSG_LPM_SET_DEVICE_CONSTRAINT     (0x0309U)
+#define TISCI_MSG_LPM_SET_LATENCY_CONSTRAINT    (0x030AU)
+#define TISCI_MSG_LPM_GET_DEVICE_CONSTRAINT     (0x030BU)
+#define TISCI_MSG_LPM_GET_LATENCY_CONSTRAINT    (0x030CU)
+#define TISCI_MSG_LPM_GET_NEXT_SYS_MODE         (0x030DU)
+#define TISCI_MSG_LPM_GET_NEXT_HOST_STATE       (0x030EU)
+#define TISCI_MSG_LPM_ENCRYPT                   (0x030FU)
+#define TISCI_MSG_LPM_DECRYPT                   (0x0310U)
+
 /**
  * struct ti_sci_msg_hdr - Generic Message Header for All messages and responses
  * @type:	Type of messages: One of TI_SCI_MSG* values
@@ -1528,6 +1545,78 @@ struct ti_sci_msg_fwl_change_owner_info_resp {
 	u8			owner_index;
 	u8			owner_privid;
 	u16			owner_permission_bits;
+} __packed;
+
+/**
+ * struct ti_sci_msg_core_resume_req - Request for TISCI_MSG_CORE_RESUME.
+ *
+ * @hdr:			Generic Header
+ *
+ * This message is to be sent to start the TFA on the main core.
+ * The TIFS will launch the TFA from the entrypoint saved via the ENTER_SLEEP
+ * message.
+ */
+struct ti_sci_msg_core_resume_req {
+	struct ti_sci_msg_hdr	hdr;
+} __packed;
+
+/**
+ * struct ti_sci_msg_core_resume_resp - Response for TISCI_MSG_CORE_RESUME.
+ *
+ * @hdr:			Generic Header
+ */
+struct ti_sci_msg_core_resume_resp {
+	struct ti_sci_msg_hdr	hdr;
+} __packed;
+
+/**
+ * struct ti_sci_msg_min_context_restore_req - Request for TISCI_MSG_MIN_CONTEXT_RESTORE.
+ *
+ * @hdr:			Generic Header
+ * @ctx_lo			Low bits from where to restore the context
+ * @ctx_hi			High bits from where to restore the context
+ * This message is to be sent to restore TIFS firewall after suspend
+ * message.
+ */
+struct ti_sci_msg_min_context_restore_req {
+	struct ti_sci_msg_hdr	hdr;
+	uint32_t		ctx_lo;
+	uint32_t		ctx_hi
+} __packed;
+
+/**
+ * struct ti_sci_msg_min_context_restore_resp - Response for TISCI_MSG_MIN_CONTEXT_RESTORE.
+ *
+ * @hdr:			Generic Header
+ */
+struct ti_sci_msg_min_context_restore_resp {
+	struct ti_sci_msg_hdr	hdr;
+} __packed;
+
+/**
+ * struct ti_sci_msg_decrypt_tfa_req - Request for TISCI_MSG_LPM_DECRYPT.
+ *
+ * @hdr:			Generic Header
+ * @unencrypted_address:	Address where the TFA should be decrypted
+ * @encrypted_address:		Address where the TFA lies encrypted
+ *
+ * This message is to be sent when the system is resuming from suspend, in order
+ * to restore the TFA.
+ * The TIFS will decrypt the TFA at specified location and restore it in SRAM.
+ */
+struct ti_sci_msg_decrypt_tfa_req {
+	struct ti_sci_msg_hdr	hdr;
+	u64			unencrypted_address;
+	u64			encrypted_address;
+} __packed;
+
+/**
+ * struct ti_sci_msg_decrypt_tfa_resp - Response for TISCI_MSG_LPM_DECRYPT.
+ *
+ * @hdr:			Generic Header
+ */
+struct ti_sci_msg_decrypt_tfa_resp {
+	struct ti_sci_msg_hdr	hdr;
 } __packed;
 
 #endif /* __TI_SCI_H */
