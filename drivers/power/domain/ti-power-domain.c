@@ -5,7 +5,7 @@
  * Copyright (C) 2020-2021 Texas Instruments Incorporated - https://www.ti.com/
  *	Tero Kristo <t-kristo@ti.com>
  */
-
+#define DEBUG
 #include <asm/io.h>
 #include <common.h>
 #include <dm.h>
@@ -49,6 +49,7 @@ static void psc_write(u32 val, struct ti_psc *psc, u32 reg)
 {
 	debug("%s: 0x%x to %p\n", __func__, val, psc->base + reg);
 	writel(val, psc->base + reg);
+	debug("%s: re-read: 0x%x to %p\n", __func__, val, psc->base + reg);
 }
 
 static u32 pd_read(struct ti_pd *pd, u32 reg)

@@ -6,7 +6,7 @@
  *	Lokesh Vutla <lokeshvutla@ti.com>
  *
  */
-
+#define DEBUG
 #include <generic-phy.h>
 #include <image.h>
 #include <net.h>

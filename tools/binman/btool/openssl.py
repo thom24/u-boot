@@ -199,7 +199,6 @@ emailAddress           = {req_dist_name_dict['emailAddress']}
  1.3.6.1.4.1.294.1.2 = ASN1:SEQUENCE:image_integrity
  1.3.6.1.4.1.294.1.3 = ASN1:SEQUENCE:swrv
 # 1.3.6.1.4.1.294.1.4 = ASN1:SEQUENCE:encryption
- 1.3.6.1.4.1.294.1.8 = ASN1:SEQUENCE:debug
 
  [ boot_seq ]
  certType = INTEGER:{cert_type}
@@ -221,11 +220,6 @@ emailAddress           = {req_dist_name_dict['emailAddress']}
 # iterationCnt = INTEGER:TEST_IMAGE_KEY_DERIVE_INDEX
 # salt = FORMAT:HEX,OCT:TEST_IMAGE_KEY_DERIVE_SALT
 
- [ debug ]
- debugUID = FORMAT:HEX,OCT:0000000000000000000000000000000000000000000000000000000000000000
- debugType = INTEGER:4
- coreDbgEn = INTEGER:0
- coreDbgSecEn = INTEGER:0
 ''', file=outf)
         args = ['req', '-new', '-x509', '-key', key_fname, '-nodes',
                 '-outform', 'DER', '-out', cert_fname, '-config', config_fname,
@@ -283,7 +277,6 @@ emailAddress           = {req_dist_name_dict['emailAddress']}
 basicConstraints = CA:true
 1.3.6.1.4.1.294.1.3=ASN1:SEQUENCE:swrv
 1.3.6.1.4.1.294.1.9=ASN1:SEQUENCE:ext_boot_info
-1.3.6.1.4.1.294.1.8=ASN1:SEQUENCE:debug
 
 [swrv]
 swrv=INTEGER:{sw_rev}
@@ -323,12 +316,6 @@ destAddr = FORMAT:HEX,OCT:{load_addr_sysfw_data:08x}
 compSize = INTEGER:{imagesize_sysfw_data}
 shaType  = OID:{sha_type}
 shaValue = FORMAT:HEX,OCT:{hashval_sysfw_data}
-
-[ debug ]
-debugUID = FORMAT:HEX,OCT:0000000000000000000000000000000000000000000000000000000000000000
-debugType = INTEGER:4
-coreDbgEn = INTEGER:0
-coreDbgSecEn = INTEGER:0
 
 {sysfw_inner_cert_ext_boot_block}
 

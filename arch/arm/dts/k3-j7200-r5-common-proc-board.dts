@@ -119,3 +119,10 @@
 	};
 };
 
+&wkup_uart0 {
+	status = "okay";
+};
+
+&mcu_uart0 {
+	status = "okay";
+};

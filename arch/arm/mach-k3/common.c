@@ -5,7 +5,7 @@
  * Copyright (C) 2018 Texas Instruments Incorporated - https://www.ti.com/
  *	Lokesh Vutla <lokeshvutla@ti.com>
  */
-
+#define DEBUG
 #include <config.h>
 #include <cpu_func.h>
 #include <image.h>
@@ -294,6 +294,27 @@ __weak int board_is_resuming(void)
 	return 0;
 }
 
+#include <reset.h>
+
+struct ti_sci_proc {
+	const struct ti_sci_handle *sci;
+	const struct ti_sci_proc_ops *ops;
+	u8 proc_id;
+	u8 host_id;
+	u16 dev_id;
+};
+
+struct k3_arm64_privdata {
+	bool has_cluster_node;
+	struct power_domain cluster_pwrdmn;
+	struct power_domain rproc_pwrdmn;
+	struct power_domain gtc_pwrdmn;
+	struct reset_ctl rproc_rst;
+	struct ti_sci_proc tsp;
+	struct clk gtc_clk;
+	void *gtc_base;
+};
+
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
@@ -306,12 +327,17 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 #if IS_ENABLED(CONFIG_SOC_K3_J721E)
 	if (board_is_resuming()) {
+
+		debug("load DM firmware\n");
+
 		if (!valid_elf_image(LPM_DM_SAVE_ADDR))
 			panic("%s: DM-Firmware image is not valid, it cannot be loaded\n",
 			      __func__);
 
 		loadaddr = load_elf_image_phdr(LPM_DM_SAVE_ADDR);
+		debug("load DM firmware done\n");
 
+		debug("restore TIFS context\n");
 		/*
 		 * TIFS minimal context restore
 		 * This restores also the firewall
@@ -321,20 +347,95 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		if (ret)
 			panic("TIFS min_context_restore failed (%d)\n", ret);
 
+		debug("restore TIFS context done\n");
 		/*
 		 * Restore TFA in msmc memory
 		 */
+		debug("restore TFA in MSMC\n");
 		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
 						      LPM_DECRYPTED_TFA_ADDR,
 						      LPM_ENCRYPTED_SAVE_ADDR);
 		if (ret)
 			panic("%s: ATF failed to decrytp TFA\n", __func__);
 
+		debug("restore TFA in MSMC\n");
+		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
+						      LPM_DECRYPTED_TFA_ADDR + 0x8000,
+						      LPM_ENCRYPTED_SAVE_ADDR + (0x8000 + 0x1000));
+		if (ret)
+			panic("%s: ATF failed to decrytp TFA\n", __func__);
+
+		debug("restore TFA in MSMC\n");
+		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
+						      LPM_DECRYPTED_TFA_ADDR + (2 * 0x8000),
+						      LPM_ENCRYPTED_SAVE_ADDR + 2 * (0x8000 + 0x1000));
+		if (ret)
+			panic("%s: ATF failed to decrytp TFA\n", __func__);
+
+		debug("restore TFA in MSMC\n");
+		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
+						      LPM_DECRYPTED_TFA_ADDR + (3 * 0x8000),
+						      LPM_ENCRYPTED_SAVE_ADDR + 3 * (0x8000 + 0x1000));
+		if (ret)
+			panic("%s: ATF failed to decrytp TFA\n", __func__);
+
+		debug("restore TFA in MSMC done\n");
+
+
+		struct power_domain rproc_pwrdmn;
+		unsigned long gtc_rate;
+		struct udevice *dev;
+		struct clk gtc_clk;
+		void *gtc_base;
+
+		debug ("Start to power on power domain of A72\n");
+
+		ret = uclass_get_device_by_seq(UCLASS_REMOTEPROC, 1, &dev);
+		if (ret)
+			panic("Unknown remote processor 1 (%d)\n", ret);
+
+		ret = power_domain_get_by_index(dev, &rproc_pwrdmn, 1);
+		if (ret)
+			panic("power_domain_get_rproc() failed: %d\n", ret);
+
+		ret = clk_get_by_index(dev, 0, &gtc_clk);
+		if (ret)
+			panic("clk_get failed: %d\n", ret);
+
+		gtc_base = dev_read_addr_ptr(dev);
+		if (!gtc_base)
+			panic("Get GTC address failed\n");
+
+		gtc_rate = clk_get_rate(&gtc_clk);
+
+#define GTC_CNTCR_REG	0x0
+#define GTC_CNTFID0_REG	0x20
+#define GTC_CNTR_EN	0x3
+		/* TFA expect the Global Timebase Counter to be set-up */
+		writel((u32)gtc_rate, gtc_base + GTC_CNTFID0_REG);
+		writel(GTC_CNTR_EN, gtc_base + GTC_CNTCR_REG);
+
+		ret = power_domain_on(&rproc_pwrdmn);
+		if (ret)
+			panic("power_domain_on failed: %d\n", ret);
+
+		struct k3_arm64_privdata *rproc = dev_get_priv(dev);
+		if (rproc->has_cluster_node) {
+			debug("Start power domain of cluster\n");
+			ret = power_domain_on(&rproc->cluster_pwrdmn);
+			if (ret) {
+				panic("power_domain_on(&rproc->cluster_pwrdmn) failed: %d\n",
+					ret);
+			}
+		}
+
 		/* restore TFA resume vectore address in main core */
+		debug("restore TFA resume vector\n");
 		ret = ti_sci->ops.lpm_ops.core_resume(ti_sci);
 		if (ret)
 			panic("ATF failed to resume (%d)\n", ret);
 
+		debug("restore TFA resume vector done\n");
 		goto start_arm64;
 	}
 #endif /* IS_ENABLED(CONFIG_SOC_K3_J721E) */
@@ -424,41 +525,6 @@ start_arm64:
 		if (ret)
 			panic("%s: ATF failed to start on rproc (%d)\n",
 			      __func__, ret);
-	} else {
-		struct power_domain rproc_pwrdmn;
-		unsigned long gtc_rate;
-		struct udevice *dev;
-		struct clk gtc_clk;
-		void *gtc_base;
-
-		ret = uclass_get_device_by_seq(UCLASS_REMOTEPROC, 1, &dev);
-		if (ret)
-			panic("Unknown remote processor 1 (%d)\n", ret);
-
-		ret = power_domain_get_by_index(dev, &rproc_pwrdmn, 1);
-		if (ret)
-			panic("power_domain_get_rproc() failed: %d\n", ret);
-
-		ret = clk_get_by_index(dev, 0, &gtc_clk);
-		if (ret)
-			panic("clk_get failed: %d\n", ret);
-
-		gtc_base = dev_read_addr_ptr(dev);
-		if (!gtc_base)
-			panic("Get GTC address failed\n");
-
-		gtc_rate = clk_get_rate(&gtc_clk);
-
-#define GTC_CNTCR_REG	0x0
-#define GTC_CNTFID0_REG	0x20
-#define GTC_CNTR_EN	0x3
-		/* TFA expect the Global Timebase Counter to be set-up */
-		writel((u32)gtc_rate, gtc_base + GTC_CNTFID0_REG);
-		writel(GTC_CNTR_EN, gtc_base + GTC_CNTCR_REG);
-
-		ret = power_domain_on(&rproc_pwrdmn);
-		if (ret)
-			panic("power_domain_on failed: %d\n", ret);
 	}
 #endif
 

@@ -6,7 +6,6 @@
  * Copyright (C) 2018 Texas Instruments Incorporated - https://www.ti.com/
  *	Lokesh Vutla <lokeshvutla@ti.com>
  */
-
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
@@ -173,7 +172,9 @@ static int ti_sci_get_response(struct ti_sci_info *info,
 	struct ti_sci_secure_msg_hdr *secure_hdr;
 	struct ti_sci_msg_hdr *hdr;
 	int ret;
+	debug("%s: %d\n", __func__, __LINE__);
 
+	debug("%s: %d: @msg=%lx @chan=%lx @info=%lx\n", (void *)msg, (void *)chan, (void *)info);
 	/* Receive the response */
 	ret = mbox_recv(chan, msg, info->desc->max_rx_timeout_ms * 1000);
 	if (ret) {
@@ -181,33 +182,43 @@ static int ti_sci_get_response(struct ti_sci_info *info,
 			__func__, ret);
 		return ret;
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	/* ToDo: Verify checksum */
-	if (info->is_secure) {
-		secure_hdr = (struct ti_sci_secure_msg_hdr *)msg->buf;
-		msg->buf = (u32 *)((void *)msg->buf + sizeof(*secure_hdr));
+			debug("%s: %d\n", __func__, __LINE__);
+if (info->is_secure) {
+				debug("%s: %d\n", __func__, __LINE__);
+secure_hdr = (struct ti_sci_secure_msg_hdr *)msg->buf;		debug("%s: %d\n", __func__, __LINE__);
+
+		msg->buf = (u32 *)((void *)msg->buf + sizeof(*secure_hdr));		debug("%s: %d\n", __func__, __LINE__);
+
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	/* msg is updated by mailbox driver */
 	hdr = (struct ti_sci_msg_hdr *)msg->buf;
 
-	/* Sanity check for message response */
+			debug("%s: %d\n", __func__, __LINE__);
+/* Sanity check for message response */
 	if (hdr->seq != info->seq) {
 		dev_dbg(info->dev, "%s: Message for %d is not expected\n",
 			__func__, hdr->seq);
 		return ret;
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	if (msg->len > info->desc->max_msg_size) {
 		dev_err(info->dev, "%s: Unable to handle %zu xfer (max %d)\n",
 			__func__, msg->len, info->desc->max_msg_size);
 		return -EINVAL;
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	if (msg->len < xfer->rx_len) {
 		dev_err(info->dev, "%s: Recv xfer %zu < expected %d length\n",
 			__func__, msg->len, xfer->rx_len);
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	return ret;
 }
@@ -239,6 +250,7 @@ static int ti_sci_do_xfer(struct ti_sci_info *info,
 	u8 secure_buf[info->desc->max_msg_size];
 	struct ti_sci_secure_msg_hdr *secure_hdr = (struct ti_sci_secure_msg_hdr *)secure_buf;
 	int ret;
+	debug("%s: %d\n", __func__, __LINE__);
 
 	/*
 	 * The reason why we need the is_secure code is because of boot R5.
@@ -247,19 +259,25 @@ static int ti_sci_do_xfer(struct ti_sci_info *info,
 	 * we have to make need to be on a secure pipe.
 	 */
 	if (info->is_secure) {
-		/* ToDo: get checksum of the entire message */
+		debug("%s: %d\n", __func__, __LINE__);
+	/* ToDo: get checksum of the entire message */
 		secure_hdr->checksum = 0;
 		secure_hdr->reserved = 0;
+		debug("%s: %d\n", __func__, __LINE__);
 		memcpy(&secure_buf[sizeof(*secure_hdr)], xfer->tx_message.buf,
 		       xfer->tx_message.len);
 
+
+		debug("%s: %d\n", __func__, __LINE__);
 		xfer->tx_message.buf = (u32 *)secure_buf;
 		xfer->tx_message.len += sizeof(*secure_hdr);
 
+		debug("%s: %d\n", __func__, __LINE__);
 		if (xfer->rx_len)
 			xfer->rx_len += sizeof(*secure_hdr);
 	}
 
+		debug("%s: %d\n", __func__, __LINE__);
 	/* Send the message */
 	ret = mbox_send(&info->chan_tx, msg);
 	if (ret) {
@@ -268,14 +286,19 @@ static int ti_sci_do_xfer(struct ti_sci_info *info,
 		return ret;
 	}
 
+		debug("%s: %d\n", __func__, __LINE__);
 	/* Get response if requested */
 	if (xfer->rx_len) {
+		debug("%s: %d\n", __func__, __LINE__);
 		ret = ti_sci_get_response(info, xfer, &info->chan_rx);
+		debug("%s: %d\n", __func__, __LINE__);
 		if (!ti_sci_is_response_ack(xfer->tx_message.buf)) {
 			dev_err(info->dev, "Message not acknowledged\n");
 			ret = -ENODEV;
 		}
+		debug("%s: %d\n", __func__, __LINE__);
 	}
+		debug("%s: %d\n", __func__, __LINE__);
 
 	return ret;
 }
@@ -2713,29 +2736,39 @@ static int ti_sci_cmd_min_context_restore(const struct ti_sci_handle *handle,
 	struct ti_sci_xfer *xfer;
 	int ret = 0;
 
+	debug("%s: %d\n", __func__, __LINE__);
+
 	if (IS_ERR(handle))
 		return PTR_ERR(handle);
+	debug("%s: %d\n", __func__, __LINE__);
 	if (!handle)
 		return -EINVAL;
+	debug("%s: %d\n", __func__, __LINE__);
 
 	info = handle_to_ti_sci_info(handle);
+	debug("%s: %d\n", __func__, __LINE__);
 
 	xfer = ti_sci_setup_one_xfer(info, TISCI_MSG_MIN_CONTEXT_RESTORE,
 				     TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
 				     (u32 *)&req, sizeof(req), sizeof(*resp));
+	debug("%s: %d\n", __func__, __LINE__);
 	if (IS_ERR(xfer)) {
 		ret = PTR_ERR(xfer);
 		return ret;
 	}
 
+	debug("%s: %d\n", __func__, __LINE__);
 	req.ctx_hi = (uint32_t)(context_addr >> 32);
 	req.ctx_lo = (uint32_t)(context_addr & 0xFFFFFFFFULL);
 
+	debug("%s: %d\n", __func__, __LINE__);
 	ret = ti_sci_do_xfer(info, xfer);
 
+	debug("%s: %d\n", __func__, __LINE__);
 	if (ret)
 		return ret;
 
+	debug("%s: %d\n", __func__, __LINE__);
 	return 0;
 }
 
