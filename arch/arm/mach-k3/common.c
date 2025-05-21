@@ -437,12 +437,18 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 //
 		debug("restore TFA resume vector done skipped\n");
 
-
-		debug("rproc_load(1, 0x70000128, 0x200)\n");
-		ret = rproc_load(1, 0x70000128, 0x200);
+		debug("##################################################################\n");
+		debug("rproc_load(1, 0x00, 0x00)\n");
+		ret = rproc_load(1, 0x00, 0x00);
 		if (ret)
 			panic("%s: ATF failed to load on rproc (%d)\n", __func__, ret);
-		debug("rproc_load(1, 0x70000128, 0x200) done\n");
+		debug("rproc_load(1, 0x00, 0x00) done\n");
+
+		debug("restore TFA resume vector\n");
+		ret = ti_sci->ops.lpm_ops.core_resume(ti_sci);
+		if (ret)
+			panic("ATF failed to resume (%d)\n", ret);
+
 
 		debug("rproc_start(1)\n");
 		ret = rproc_start(1);
@@ -451,6 +457,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 			      __func__, ret);
 		debug("rproc_start(1) done\n");
 
+		debug("##################################################################\n");
 		goto start_arm64;
 	}
 #endif /* IS_ENABLED(CONFIG_SOC_K3_J721E) */

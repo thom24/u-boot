@@ -130,6 +130,7 @@ static struct ti_sci_xfer *ti_sci_setup_one_xfer(struct ti_sci_info *info,
 	struct ti_sci_xfer *xfer = &info->xfer;
 	struct ti_sci_msg_hdr *hdr;
 
+	dev_err(info->dev, "ti_sci_setup_one_xfer: %08x\n", msg_type);
 	/* Ensure we have sane transfer sizes */
 	if (rx_message_size > info->desc->max_msg_size ||
 	    tx_message_size > info->desc->max_msg_size ||
@@ -1836,6 +1837,8 @@ static int ti_sci_cmd_proc_handover(const struct ti_sci_handle *handle,
 	req.processor_id = proc_id;
 	req.host_id = host_id;
 
+	printf("ti_sci_cmd_proc_handover: req.processor_id=%x req.host_id=%x\n", proc_id, host_id);
+
 	ret = ti_sci_do_xfer(info, xfer);
 	if (ret)
 		return ret;
@@ -1884,6 +1887,13 @@ static int ti_sci_cmd_set_proc_boot_cfg(const struct ti_sci_handle *handle,
 				TISCI_ADDR_HIGH_SHIFT;
 	req.config_flags_set = config_flags_set;
 	req.config_flags_clear = config_flags_clear;
+
+	printf("ti_sci_cmd_set_proc_boot_cfg: req.processor_id = %x\n", proc_id);
+	printf("ti_sci_cmd_set_proc_boot_cfg: req.bootvector_low = %x\n", (u32)(bootvector & TISCI_ADDR_LOW_MASK));
+	printf("ti_sci_cmd_set_proc_boot_cfg: req.bootvector_high = %x\n", (u32)((bootvector & TISCI_ADDR_HIGH_MASK) >>TISCI_ADDR_HIGH_SHIFT));
+	printf("ti_sci_cmd_set_proc_boot_cfg: req.config_flags_set = %x\n", config_flags_set);
+	printf("ti_sci_cmd_set_proc_boot_cfg: req.config_flags_clear = %x\n", config_flags_clear);
+
 
 	ret = ti_sci_do_xfer(info, xfer);
 	if (ret)

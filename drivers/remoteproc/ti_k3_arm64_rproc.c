@@ -46,6 +46,11 @@ struct k3_arm64_privdata {
 	void *gtc_base;
 };
 
+int __weak board_is_resuming(void)
+{
+	return 0;
+}
+
 /**
  * k3_arm64_load() - Load up the Remote processor image
  * @dev:	rproc device pointer
@@ -97,7 +102,11 @@ static int k3_arm64_load(struct udevice *dev, ulong addr, ulong size)
 		}
 	}
 
-	return ti_sci_proc_set_config(&rproc->tsp, addr, 0, 0);
+	if (!board_is_resuming())
+		return ti_sci_proc_set_config(&rproc->tsp, addr, 0, 0);
+
+	debug("board is resuming, so skip ti_sci_proc_set_config\n");
+	return 0;
 }
 
 /**
@@ -120,7 +129,11 @@ static int k3_arm64_start(struct udevice *dev)
 		return ret;
 	}
 
-	return ti_sci_proc_release(&rproc->tsp);
+	if (!board_is_resuming())
+		return ti_sci_proc_release(&rproc->tsp);
+
+	debug("board is resuming, so skip ti_sci_proc_release\n");
+	return 0;
 }
 
 /**
