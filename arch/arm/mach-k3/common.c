@@ -358,27 +358,6 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 		if (ret)
 			panic("%s: ATF failed to decrytp TFA\n", __func__);
 
-		debug("restore TFA in MSMC\n");
-		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
-						      LPM_DECRYPTED_TFA_ADDR + 0x8000,
-						      LPM_ENCRYPTED_SAVE_ADDR + (0x8000 + 0x1000));
-		if (ret)
-			panic("%s: ATF failed to decrytp TFA\n", __func__);
-
-		debug("restore TFA in MSMC\n");
-		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
-						      LPM_DECRYPTED_TFA_ADDR + (2 * 0x8000),
-						      LPM_ENCRYPTED_SAVE_ADDR + 2 * (0x8000 + 0x1000));
-		if (ret)
-			panic("%s: ATF failed to decrytp TFA\n", __func__);
-
-		debug("restore TFA in MSMC\n");
-		ret = ti_sci->ops.lpm_ops.decrypt_tfa(ti_sci,
-						      LPM_DECRYPTED_TFA_ADDR + (3 * 0x8000),
-						      LPM_ENCRYPTED_SAVE_ADDR + 3 * (0x8000 + 0x1000));
-		if (ret)
-			panic("%s: ATF failed to decrytp TFA\n", __func__);
-
 		debug("restore TFA in MSMC done\n");
 
 
