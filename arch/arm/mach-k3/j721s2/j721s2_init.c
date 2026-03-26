@@ -261,6 +261,48 @@ bool check_rom_loaded_sysfw(void)
 	return is_rom_loaded_sysfw(&bootdata);
 }
 
+void lpm_process(void)
+{
+	int ret = 0;
+	struct ti_sci_handle *ti_sci = get_ti_sci_handle();
+	save_certificate();
+
+	ret = ti_sci->ops.lpm_ops.lpm_save_addr(ti_sci, (u32)mem_addr_lpm.context_save_addr, mem_addr_lpm.size);
+	if (ret)
+		pr_err("TIFS lpm save addr fail\n");
+}
+
+int extract_lpm_region(void)
+{
+        ofnode node;
+	u32 lpm_reg_addr, lpm_reg_size;
+
+	node = ofnode_path("/reserved-memory/lpm-memory");
+	if (!ofnode_valid(node)) {
+	    printf("lpm will not be functional\n");
+		return -ENODEV;
+	}
+
+	lpm_reg_addr = ofnode_get_addr(node);
+	if (lpm_reg_addr == FDT_ADDR_T_NONE) {
+		printf("Can't find a valid reserved node!\n");
+		return -ENODEV;
+        }
+
+	lpm_reg_size = ofnode_get_size(node);
+	if (lpm_reg_size == FDT_ADDR_T_NONE) {
+		printf("Can't find a valid reserved node!\n");
+		return -ENODEV;
+        }
+
+	mem_addr_lpm.context_save_addr = (u32 *)lpm_reg_addr;
+	mem_addr_lpm.atf_cert_addr =  (u32 *)((uintptr_t)mem_addr_lpm.context_save_addr + FW_IMAGE_SIZE);
+	mem_addr_lpm.optee_cert_addr = (u32 *)((uintptr_t)mem_addr_lpm.atf_cert_addr + FW_IMAGE_SIZE);
+	mem_addr_lpm.dm_save_addr = (u32 *)((uintptr_t)mem_addr_lpm.optee_cert_addr + (2*FW_IMAGE_SIZE));
+	mem_addr_lpm.size = lpm_reg_size;
+	return 0;
+}
+
 #define GPIO_OUT_1 0x3D
 #define DDR_RET_VAL BIT(3)
 #define PMIC_NSLEEP_REG 0x86
@@ -307,6 +349,10 @@ void k3_mem_init(void)
                 dev2 = dev;
 
                 if (board_is_resuming()) {
+			typedef void __noreturn (*image_entry_noargs_t)(void);
+			u32 loadaddr, size_int;
+			void *image_addr;
+
                         k3_ddrss_lpddr4_exit_retention(dev1, &reg1);
                         k3_ddrss_lpddr4_exit_retention(dev2, &reg2);
 
@@ -318,6 +364,27 @@ void k3_mem_init(void)
 
                         k3_ddrss_lpddr4_exit_low_power(dev1, &reg1);
 			k3_ddrss_lpddr4_exit_low_power(dev2, &reg2);
+
+			printf("Initialized 2 DRAM controllers\n");
+			ret = extract_lpm_region();
+			if (ret)
+				panic("Cannot find valid LPM address range..LPM resume failed \n");
+			image_addr = (void *)mem_addr_lpm.atf_cert_addr;
+			ret = rproc_load(1, (ulong)image_addr, 0x200);
+			if (ret)
+				panic("rproc failed to be initialized (%d)\n", ret);
+
+			image_addr = mem_addr_lpm.atf_cert_addr;
+			size_int = FW_IMAGE_SIZE;
+			ti_secure_image_replay_cert(&image_addr, &size_int);
+			image_addr = mem_addr_lpm.optee_cert_addr;
+			ti_secure_image_replay_cert(&image_addr, &size_int);
+			loadaddr = resume_to_dm_f();
+			printf("Starting ATF on ARM64 core...\n\n");
+			resume_rproc_f();
+
+			image_entry_noargs_t image_entry = (image_entry_noargs_t)loadaddr;
+			image_entry();
                 }
 	}
 	spl_enable_cache();
