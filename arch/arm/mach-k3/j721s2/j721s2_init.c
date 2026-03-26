@@ -16,7 +16,9 @@
 #include <dm/uclass-internal.h>
 #include <dm/pinctrl.h>
 #include <dm/root.h>
+#include <mach/k3-ddr.h>
 #include <mmc.h>
+#include <power/pmic.h>
 #include <remoteproc.h>
 
 #include "../sysfw-loader.h"
@@ -259,9 +261,34 @@ bool check_rom_loaded_sysfw(void)
 	return is_rom_loaded_sysfw(&bootdata);
 }
 
+#define GPIO_OUT_1 0x3D
+#define DDR_RET_VAL BIT(3)
+#define PMIC_NSLEEP_REG 0x86
+
+static void k3_deassert_DDR_RET(void)
+{
+	struct udevice *pmic;
+	int regval;
+	int err;
+
+	err = uclass_get_device_by_name(UCLASS_PMIC,
+					"pmic@4c", &pmic);
+	if (err) {
+		printf("Getting PMIC@4c init failed: %d\n", err);
+		return;
+	}
+	/* Set DDR_RET Signal Low on PMIC B */
+	regval = pmic_reg_read(pmic, GPIO_OUT_1) & ~DDR_RET_VAL;
+        regval &= ~(1 << (4 - 1));
+	pmic_reg_write(pmic, GPIO_OUT_1, regval);
+
+	pmic_reg_write(pmic, PMIC_NSLEEP_REG, 0x3);
+}
+
 void k3_mem_init(void)
 {
-	struct udevice *dev;
+	struct udevice *dev, *dev1, *dev2;
+	struct k3_ddrss_regs reg1, reg2;
 	int ret;
 
 	if (IS_ENABLED(CONFIG_K3_J721E_DDRSS)) {
@@ -272,10 +299,26 @@ void k3_mem_init(void)
 		ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 		if (ret)
 			panic("DRAM 0 init failed: %d\n", ret);
+                dev1 = dev;
 
 		ret = uclass_next_device_err(&dev);
 		if (ret && ret != -ENODEV)
 			panic("DRAM 1 init failed: %d\n", ret);
+                dev2 = dev;
+
+                if (board_is_resuming()) {
+                        k3_ddrss_lpddr4_exit_retention(dev1, &reg1);
+                        k3_ddrss_lpddr4_exit_retention(dev2, &reg2);
+
+			/* de-assert DDR_RET pin */
+			k3_deassert_DDR_RET();
+	
+                        k3_ddrss_lpddr4_change_freq(dev1);
+                        k3_ddrss_lpddr4_change_freq(dev2);
+
+                        k3_ddrss_lpddr4_exit_low_power(dev1, &reg1);
+			k3_ddrss_lpddr4_exit_low_power(dev2, &reg2);
+                }
 	}
 	spl_enable_cache();
 }
