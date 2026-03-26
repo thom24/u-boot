@@ -18,9 +18,13 @@
 #include <dm/root.h>
 #include <mmc.h>
 #include <remoteproc.h>
+#include <power/pmic.h>
+#include <mach/k3-ddrss.h>
 
 #include "../sysfw-loader.h"
 #include "../common.h"
+
+#define MAX_DDR_CONTROLLERS	2
 
 /* NAVSS North Bridge (NB) */
 #define NAVSS0_NBSS_NB0_CFG_MMRS		0x03702000
@@ -259,23 +263,211 @@ bool check_rom_loaded_sysfw(void)
 	return is_rom_loaded_sysfw(&bootdata);
 }
 
-void k3_mem_init(void)
+#if 1
+int pmic4c_reg_write(u32 reg, u32 val)
 {
+	unsigned char buf[4] = { 0 };
+
+//	if (check_reg(p, reg))
+//		return -EINVAL;
+#if CONFIG_IS_ENABLED(DM_I2C)
 	struct udevice *dev;
 	int ret;
 
+	ret = i2c_get_chip_for_busnum(0, 0x4c,
+				      1, &dev);
+	if (ret) {
+		printf("%s: Cannot find udev for a bus %d\n", __func__,
+		       0);
+		return -ENXIO;
+	}
+#endif
+
+	switch (1) {
+/*
+	case 3:
+		if (p->sensor_byte_order == PMIC_SENSOR_BYTE_ORDER_BIG) {
+			buf[2] = (cpu_to_le32(val) >> 16) & 0xff;
+			buf[1] = (cpu_to_le32(val) >> 8) & 0xff;
+			buf[0] = cpu_to_le32(val) & 0xff;
+		} else {
+			buf[0] = (cpu_to_le32(val) >> 16) & 0xff;
+			buf[1] = (cpu_to_le32(val) >> 8) & 0xff;
+			buf[2] = cpu_to_le32(val) & 0xff;
+		}
+		break;
+	case 2:
+		if (p->sensor_byte_order == PMIC_SENSOR_BYTE_ORDER_BIG) {
+			buf[1] = (cpu_to_le32(val) >> 8) & 0xff;
+			buf[0] = cpu_to_le32(val) & 0xff;
+		} else {
+			buf[0] = (cpu_to_le32(val) >> 8) & 0xff;
+			buf[1] = cpu_to_le32(val) & 0xff;
+		}
+		break;
+*/
+	case 1:
+		buf[0] = cpu_to_le32(val) & 0xff;
+		break;
+	default:
+		printf("%s: invalid tx_num: %d", __func__, 1);
+		return -EINVAL;
+	}
+
+#if CONFIG_IS_ENABLED(DM_I2C)
+	return dm_i2c_write(dev, reg, buf, 1 /*pmic_i2c_tx_num*/);
+#else
+	return i2c_write(pmic_i2c_addr, reg, 1, buf, pmic_i2c_tx_num);
+#endif
+}
+
+static int pmic4c_reg_read(u32 reg, u32 *val)
+{
+	unsigned char buf[4] = { 0 };
+	u32 ret_val = 0;
+	int __maybe_unused ret;
+
+//	if (check_reg(p, reg))
+//		return -EINVAL;
+
+#if CONFIG_IS_ENABLED(DM_I2C)
+	struct udevice *dev;
+
+	ret = i2c_get_chip_for_busnum(0, 0x4c,
+				      1, &dev);
+	if (ret) {
+		printf("%s: Cannot find udev for a bus %d\n", __func__,
+		       0);
+		return -ENXIO;
+	}
+	ret = dm_i2c_read(dev, reg, buf, 1 /*pmic_i2c_tx_num*/);
+	if (ret)
+		return ret;
+#endif
+
+	switch (1) {
+/*
+        case 3:
+		if (p->sensor_byte_order == PMIC_SENSOR_BYTE_ORDER_BIG)
+			ret_val = le32_to_cpu(buf[2] << 16
+					      | buf[1] << 8 | buf[0]);
+		else
+			ret_val = le32_to_cpu(buf[0] << 16 |
+					      buf[1] << 8 | buf[2]);
+		break;
+	case 2:
+		if (p->sensor_byte_order == PMIC_SENSOR_BYTE_ORDER_BIG)
+			ret_val = le32_to_cpu(buf[1] << 8 | buf[0]);
+		else
+			ret_val = le32_to_cpu(buf[0] << 8 | buf[1]);
+		break;
+*/
+	case 1:
+		ret_val = le32_to_cpu(buf[0]);
+		break;
+	default:
+		printf("%s: invalid tx_num: %d", __func__, 1);
+		return -EINVAL;
+	}
+	memcpy(val, &ret_val, sizeof(ret_val));
+
+	return 0;
+}
+#endif
+
+#define DDR_RET_VAL BIT(3)
+#define GPIO_OUT_1 0x3D
+#define PMIC_NSLEEP_REG 0x86
+
+static void k3_deassert_DDR_RET(void)
+{
+	struct udevice *pmic;
+	int regval;
+	int err;
+
+//	err = uclass_get_device_by_name(UCLASS_PMIC,
+//					"pmic@4c", &pmic);
+//	if (err) {
+//		printf("Getting PMIC@4c init failed: %d\n", err);
+//		return;
+//	}
+        
+        for (int i = 0x5A; i<=0x6C; i++) {
+                pmic4c_reg_read(i, &regval);
+                printf("### %s: %d: pmicb @0x%02x = 0x%02x\n",
+                       __func__, __LINE__, i, regval);
+        }
+
+        pmic4c_reg_read(0x86, &regval);
+                printf("### %s: %d: pmicb @0x%02x = 0x%02x\n",
+                       __func__, __LINE__, 0x86, regval);
+
+	/* Set DDR_RET Signal Low on PMIC B */
+//	regval = pmic_reg_read(pmic, GPIO_OUT_1) & ~DDR_RET_VAL;
+	pmic4c_reg_read(GPIO_OUT_1, &regval);
+        regval &= ~(1 << (4 - 1));
+
+//	pmic_reg_write(pmic, GPIO_OUT_1, regval);
+	pmic4c_reg_write(GPIO_OUT_1, regval);
+//	pmic_reg_write(pmic, PMIC_NSLEEP_REG, 0x3);
+//	pmic4c_reg_write(PMIC_NSLEEP_REG, 0x3);
+        
+}
+
+void k3_mem_init(void)
+{
+	struct udevice *dev;
+	int ret, ctrl = 0;
+
 	if (IS_ENABLED(CONFIG_K3_J721E_DDRSS)) {
-		ret = uclass_get_device_by_name(UCLASS_MISC, "msmc", &dev);
+		struct udevice *devs[MAX_DDR_CONTROLLERS];
+		struct k3_ddrss_regs regs[MAX_DDR_CONTROLLERS];
+
+                ret = uclass_get_device_by_name(UCLASS_MISC, "msmc", &dev);
 		if (ret)
 			panic("Probe of msmc failed: %d\n", ret);
+
+
 
 		ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 		if (ret)
 			panic("DRAM 0 init failed: %d\n", ret);
 
-		ret = uclass_next_device_err(&dev);
-		if (ret && ret != -ENODEV)
-			panic("DRAM 1 init failed: %d\n", ret);
+		devs[0] = dev;
+		ctrl++;
+
+                while (ctrl < MAX_DDR_CONTROLLERS) {
+			ret = uclass_next_device_err(&dev);
+			if (ret == -ENODEV)
+				break;
+
+			if (ret)
+				panic("DRAM %d init failed: %d\n", ctrl, ret);
+			devs[ctrl] = dev;
+			ctrl++;
+		}
+	
+       	printf("####### %s: %d\n", __func__, __LINE__);
+                if (board_is_resuming()) {
+			/* exit DDRs from retention */
+			for (ctrl = 0; ctrl < MAX_DDR_CONTROLLERS; ctrl++) {
+				k3_ddrss_lpddr4_exit_retention(devs[ctrl],
+							       &regs[ctrl]);
+			}
+
+			/* de-assert DDR_RET pin */
+			k3_deassert_DDR_RET();
+
+			/* restore DDR max frequency */
+			for (ctrl = 0; ctrl < MAX_DDR_CONTROLLERS; ctrl++)
+				k3_ddrss_lpddr4_change_freq(devs[ctrl]);
+
+			/* exit DDR from low power */
+			for (ctrl = 0; ctrl < MAX_DDR_CONTROLLERS; ctrl++) {
+				k3_ddrss_lpddr4_exit_low_power(devs[ctrl],
+							       &regs[ctrl]);
+			}
+		}
 	}
 	spl_enable_cache();
 }
@@ -337,6 +529,8 @@ void board_init_f(ulong dummy)
 {
 	struct udevice *dev;
 	int ret;
+	/* init resume flag */
+	gd_set_k3_resuming(-1);
 
 	k3_spl_init();
 #if defined(CONFIG_SPL_OF_LIST) && defined(CONFIG_TI_I2C_BOARD_DETECT)

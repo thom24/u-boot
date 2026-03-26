@@ -11,6 +11,7 @@
 	aliases {
 		remoteproc0 = &sysctrler;
 		remoteproc1 = &a72_0;
+                serial0 = &wkup_uart0;
 	};
 
 	a72_0: a72@0 {

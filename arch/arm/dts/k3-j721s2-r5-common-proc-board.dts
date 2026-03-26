@@ -28,3 +28,16 @@
 	bootph-all;
 	status = "okay";
 };
+
+&wkup_uart0 {
+        status = "okay";
+};
+
+&mcu_uart0 {
+        status = "okay";
+};
+
+//&tps659414 {
+//	  //bootph-all;
+//          bootph-pre-ram;
+//};
