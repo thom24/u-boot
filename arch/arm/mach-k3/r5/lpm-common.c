@@ -68,7 +68,7 @@ static int extract_lpm_region(void)
 	return 0;
 }
 
-static void save_certificate(void)
+static int save_certificate(void)
 {
 	int ret;
 
@@ -76,13 +76,13 @@ static void save_certificate(void)
 	    !fit_image_info[IMAGE_ID_OPTEE].image_start ||
 	    !fit_image_info[IMAGE_ID_DM_FW].image_start) {
 		pr_err("Invalid images to save\n");
-		return;
+		return -EINVAL;
 	}
 
 	ret = extract_lpm_region();
 	if (ret) {
 		pr_err("Cannot find valid LPM address range..\n");
-		return;
+		return -ENOMEM;
 	}
 
 	memcpy(mem_addr_lpm.atf_cert_addr,
@@ -96,6 +96,8 @@ static void save_certificate(void)
 	memcpy(mem_addr_lpm.dm_save_addr,
 	       (void *)fit_image_info[IMAGE_ID_DM_FW].image_start,
 	       fit_image_info[IMAGE_ID_DM_FW].image_len);
+
+	return 0;
 }
 
 void lpm_process(void)
@@ -104,7 +106,9 @@ void lpm_process(void)
 	unsigned long save_addr;
 	struct ti_sci_handle *ti_sci = get_ti_sci_handle();
 
-	save_certificate();
+	ret = save_certificate();
+	if (ret)
+		return;
 	save_addr = (unsigned long)mem_addr_lpm.context_save_addr;
 	ret = ti_sci->ops.lpm_ops.lpm_save_addr(ti_sci, save_addr,
 						mem_addr_lpm.size);
